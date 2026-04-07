@@ -195,7 +195,7 @@ export default function App() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center p-1.5 sm:p-2" style={{ background: '#080e16' }}>
-      <div className="w-full" style={{ maxWidth: city.width }}>
+      <div className="w-full" style={{ maxWidth: 1060 }}>
         <GameHUD
           money={ui.money} killed={ui.killed} score={ui.score}
           wave={ui.wave} waveActive={ui.waveActive} totalWaves={mode.waves.length}
@@ -203,31 +203,32 @@ export default function App() {
         />
       </div>
 
-      <div className="flex gap-1.5 mt-1.5 w-full" style={{ maxWidth: city.width + 165 }}>
-        <canvas
-          ref={canvasRef}
-          width={city.width}
-          height={city.height}
-          onClick={handleClick}
-          onMouseMove={handleMove}
-          onMouseLeave={() => { hoverRef.current = null; }}
-          onTouchStart={handleTouch}
-          className="rounded-lg flex-1 min-w-0"
-          style={{
-            border: '1px solid #1e293b',
-            cursor: 'crosshair',
-            background: '#0c1222',
-            boxShadow: '0 0 40px rgba(0,0,0,0.5)',
-            maxHeight: 'calc(100dvh - 130px)',
-            objectFit: 'contain',
-          }}
-        />
-        <div className="hidden md:block">
-          <BattleLog logs={ui.logs} />
+      <div style={{ display: 'flex', gap: 6, marginTop: 6, width: '100%', maxWidth: 1060 }}>
+        <div ref={containerRef} style={{ flex: '1 1 0%', minWidth: 0, maxWidth: 880 }}>
+          <canvas
+            ref={canvasRef}
+            width={city.width}
+            height={city.height}
+            onClick={handleClick}
+            onMouseMove={handleMove}
+            onMouseLeave={() => { hoverRef.current = null; }}
+            onTouchStart={handleTouch}
+            className="rounded-lg"
+            style={{
+              border: '1px solid #1e293b',
+              cursor: 'crosshair',
+              background: '#0c1222',
+              boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+              maxHeight: 'calc(100dvh - 130px)',
+              width: '100%',
+              display: 'block',
+            }}
+          />
         </div>
+        <BattleLog logs={ui.logs} />
       </div>
 
-      <div className="w-full" style={{ maxWidth: city.width }}>
+      <div className="w-full" style={{ maxWidth: 1060 }}>
         <BottomBar
           mode={mode} selected={selected} onSelect={setSelected}
           counts={ui.counts} waveActive={ui.waveActive} wave={ui.wave}
