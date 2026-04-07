@@ -12,7 +12,7 @@ export function drawTowers(ctx, g) {
     ctx.strokeStyle = alive ? mc.color + '88' : '#7f1d1d88';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(tw.x, tw.y, 15, 0, Math.PI * 2);
+    ctx.arc(tw.x, tw.y, 11, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -21,11 +21,11 @@ export function drawTowers(ctx, g) {
       ctx.translate(tw.x, tw.y);
       ctx.rotate(tw.angle);
       ctx.fillStyle = mc.color;
-      ctx.fillRect(0, -2, 16, 4);
+      ctx.fillRect(0, -1.5, 12, 3);
       ctx.restore();
     }
 
-    ctx.font = '12px sans-serif';
+    ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(alive ? mc.emoji : '💥', tw.x, tw.y);
@@ -33,9 +33,9 @@ export function drawTowers(ctx, g) {
     if (alive && tw.hp < tw.maxHp) {
       const pct = tw.hp / tw.maxHp;
       ctx.fillStyle = '#0008';
-      ctx.fillRect(tw.x - 14, tw.y - 22, 28, 3);
+      ctx.fillRect(tw.x - 10, tw.y - 16, 20, 3);
       ctx.fillStyle = pct > 0.5 ? mc.color : '#ef4444';
-      ctx.fillRect(tw.x - 14, tw.y - 22, 28 * pct, 3);
+      ctx.fillRect(tw.x - 10, tw.y - 16, 20 * pct, 3);
     }
 
     // Upgrade level rings
@@ -43,9 +43,9 @@ export function drawTowers(ctx, g) {
     if (alive && level > 0) {
       ctx.strokeStyle = mc.color + '55';
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(tw.x, tw.y, 19, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(tw.x, tw.y, 14, 0, Math.PI * 2); ctx.stroke();
       if (level >= 2) {
-        ctx.beginPath(); ctx.arc(tw.x, tw.y, 22, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(tw.x, tw.y, 17, 0, Math.PI * 2); ctx.stroke();
       }
     }
     ctx.globalAlpha = 1;

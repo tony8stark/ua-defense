@@ -59,7 +59,7 @@ export function drawHoverPreview(ctx, hover, selectedType, mode) {
   // Unit preview
   ctx.fillStyle = `${mc.color}30`;
   ctx.beginPath();
-  ctx.arc(hover.x, hover.y, 15, 0, Math.PI * 2);
+  ctx.arc(hover.x, hover.y, 11, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.font = '13px sans-serif';

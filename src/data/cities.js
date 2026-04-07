@@ -1,7 +1,7 @@
 // City configurations
 // Each city defines: layout dimensions, buildings, spawn edges, terrain style
 
-export const GRID = 40;
+export const GRID = 28;
 
 export const CITIES = {
   odesa: {

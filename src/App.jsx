@@ -113,7 +113,7 @@ export default function App() {
       if (t.hp > 0 && Math.abs(t.x - gx) < GRID * 0.8 && Math.abs(t.y - gy) < GRID * 0.8) return;
     }
     for (const b of g.buildings) {
-      if (Math.sqrt((gx - b.x) ** 2 + (gy - b.y) ** 2) < 45) return;
+      if (Math.sqrt((gx - b.x) ** 2 + (gy - b.y) ** 2) < 35) return;
     }
 
     const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0, callsign: getCallsign(), kills: 0 };

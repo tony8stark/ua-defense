@@ -7,16 +7,26 @@ import { playSiren, playExplosion } from '../audio/SoundManager.js';
 
 export function updateIskander(g) {
   const m = g.mode;
-  if (!g.waveActive && g.wave === 0) return;
+  // Training & Realistic: Iskander only during active waves
+  // Hell: Iskander can strike between waves too
+  const isHell = m.iskander.interval[0] < 600;
+  const betweenWaves = !g.waveActive && g.wave > 0;
 
-  g.iskanderTimer -= TICK;
-
+  // Always resolve an active warning (even between waves)
   if (g.iskanderWarn) {
     g.iskanderWarn.life -= TICK;
     if (g.iskanderWarn.life <= 0) {
       impact(g, m);
     }
-  } else if (g.iskanderTimer <= 0) {
+    return;
+  }
+
+  // Don't spawn new warnings between waves (except Hell)
+  if (betweenWaves && !isHell) return;
+  if (g.wave === 0 && !g.waveActive) return;
+
+  g.iskanderTimer -= TICK;
+  if (g.iskanderTimer <= 0) {
     spawnWarning(g, m);
   }
 }
