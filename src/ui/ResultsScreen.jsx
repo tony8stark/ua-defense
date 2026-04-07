@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { MODES } from '../data/difficulty.js';
 import { submitScore } from '../lib/supabase.js';
-import Leaderboard from './Leaderboard.jsx';
 
-export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, mvp, onMenu }) {
+export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, mvp, onMenu, onLeaderboard }) {
   const m = MODES[difficulty];
   const survived = Object.values(bHp).filter(h => h > 0).length;
   const [name, setName] = useState(() => {
@@ -93,20 +92,29 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
           <div style={{ marginTop: 14, fontSize: 11, color: '#4ade80' }}>Результат збережено!</div>
         )}
 
-        <button
-          onClick={onMenu}
-          style={{
-            marginTop: 14, padding: '10px 28px', fontSize: 12, fontWeight: 700,
-            borderRadius: 8, background: '#1e293b', color: '#e2e8f0',
-            border: '1px solid #334155', textTransform: 'uppercase', letterSpacing: 1,
-          }}
-        >
-          ↩ Меню
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={onMenu}
+            style={{
+              padding: '10px 24px', fontSize: 12, fontWeight: 700,
+              borderRadius: 8, background: '#1e293b', color: '#e2e8f0',
+              border: '1px solid #334155', textTransform: 'uppercase', letterSpacing: 1,
+            }}
+          >
+            ↩ Меню
+          </button>
+          <button
+            onClick={onLeaderboard}
+            style={{
+              padding: '10px 24px', fontSize: 12, fontWeight: 700,
+              borderRadius: 8, background: '#1e293b', color: '#fbbf24',
+              border: '1px solid #334155',
+            }}
+          >
+            🏆 Рейтинг
+          </button>
+        </div>
       </div>
-
-      {/* Leaderboard */}
-      <Leaderboard currentCity={cityId} currentDifficulty={difficulty} currentScore={submitted ? score : null} />
     </div>
   );
 }

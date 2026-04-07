@@ -16,6 +16,7 @@ import GameHUD from './ui/GameHUD.jsx';
 import BattleLog from './ui/BattleLog.jsx';
 import BottomBar from './ui/BottomBar.jsx';
 import ContextMenu from './ui/ContextMenu.jsx';
+import Leaderboard from './ui/Leaderboard.jsx';
 
 export default function App() {
   const [phase, setPhase] = useState('menu');
@@ -367,13 +368,14 @@ export default function App() {
   }, [phase, cityId, difficulty]);
 
   // MENU
-  if (phase === 'menu') return <MainMenu onSelectCity={selectCity} />;
+  if (phase === 'menu') return <MainMenu onSelectCity={selectCity} onShowLeaderboard={() => setPhase('leaderboard')} />;
+  if (phase === 'leaderboard') return <Leaderboard onBack={goMenu} />;
   if (phase === 'difficulty') return <DifficultySelect cityId={cityId} onSelect={selectDifficulty} onBack={goMenu} />;
   if (phase === 'won' || phase === 'lost') {
     // Find MVP tower (most kills)
     const g = gRef.current;
     const mvp = g?.towers?.filter(t => (t.kills || 0) > 0).sort((a, b) => (b.kills || 0) - (a.kills || 0))[0] || null;
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} mvp={mvp} onMenu={goMenu} />;
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} mvp={mvp} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
   // PLAYING

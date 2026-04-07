@@ -27,7 +27,7 @@ export default function GameHUD({ money, killed, score, wave, waveActive, totalW
         <span style={{ fontSize: 10 }}>{weather.label}</span>
       )}
       {ewActive && (
-        <span style={{ fontSize: 9, color: '#f59e0b' }}>⚡РЕБ</span>
+        <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>⚡ВОРОЖИЙ РЕБ</span>
       )}
       <span style={{ display: 'flex', gap: 1 }}>
         {buildings.map(b => (

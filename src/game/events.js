@@ -126,9 +126,9 @@ export function trySpawnEW(g) {
   // 15% chance per wave
   if (Math.random() > 0.15) return;
 
-  g.ewActive = { timer: rnd(250, 400), maxTimer: 400 };
+  g.ewActive = { timer: rnd(400, 650), maxTimer: 650 };
   g.ewCooldown = 2;
-  addLog(g, '📡 РЕБ АКТИВНИЙ! Зв\'язок порушено!');
+  addLog(g, '📡 ВОРОЖИЙ РЕБ! Зв\'язок порушено!');
   playEWBuzz();
 }
 
@@ -137,7 +137,7 @@ export function updateEW(g) {
   g.ewActive.timer -= TICK;
   if (g.ewActive.timer <= 0) {
     g.ewActive = null;
-    addLog(g, '📡 РЕБ деактивовано');
+    addLog(g, '📡 Ворожий РЕБ деактивовано');
   }
 }
 
@@ -180,7 +180,7 @@ export function drawEWOverlay(ctx, g) {
   ctx.font = "bold 16px 'Courier New'";
   ctx.textAlign = 'center';
   ctx.fillStyle = flash ? '#f59e0b' : '#f59e0baa';
-  ctx.fillText('⚡ РЕБ АКТИВНИЙ ⚡', W / 2, 24);
+  ctx.fillText('⚡ ВОРОЖИЙ РЕБ ⚡', W / 2, 24);
 
   // Timer bar
   const progress = g.ewActive.timer / g.ewActive.maxTimer;

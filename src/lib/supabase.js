@@ -2,13 +2,6 @@
 const SUPABASE_URL = 'https://ogamfoebvducswmxtjas.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3mIhORG6U3O0fW82BghX2Q_0V679nuk';
 
-const headers = {
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-  Prefer: 'return=minimal',
-};
-
 export function detectDevice() {
   const ua = navigator.userAgent;
   if (/iPad|Tablet/i.test(ua)) return 'tablet';
@@ -16,10 +9,17 @@ export function detectDevice() {
   return 'desktop';
 }
 
+// Upsert: if same name+city+difficulty exists and new score is higher, update it.
+// Otherwise insert new row.
 export async function submitScore({ name, score, city, difficulty, wavesSurvived, kills }) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
     method: 'POST',
-    headers,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates',
+    },
     body: JSON.stringify({
       name,
       score,
@@ -33,7 +33,7 @@ export async function submitScore({ name, score, city, difficulty, wavesSurvived
   return res.ok;
 }
 
-export async function fetchLeaderboard(city, difficulty, limit = 20) {
+export async function fetchLeaderboard(city, difficulty, limit = 25) {
   const params = new URLSearchParams({
     select: 'id,name,score,city,difficulty,waves_survived,kills,device,created_at',
     order: 'score.desc',

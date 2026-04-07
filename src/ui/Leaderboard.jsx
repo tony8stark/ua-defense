@@ -3,11 +3,11 @@ import { fetchLeaderboard } from '../lib/supabase.js';
 import { CITIES } from '../data/cities.js';
 import { MODES } from '../data/difficulty.js';
 
-export default function Leaderboard({ currentCity, currentDifficulty, currentScore }) {
+export default function Leaderboard({ onBack, highlightName, highlightCity, highlightDifficulty }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterCity, setFilterCity] = useState(currentCity || '');
-  const [filterDiff, setFilterDiff] = useState(currentDifficulty || '');
+  const [filterCity, setFilterCity] = useState(highlightCity || '');
+  const [filterDiff, setFilterDiff] = useState(highlightDifficulty || '');
 
   useEffect(() => {
     setLoading(true);
@@ -18,19 +18,20 @@ export default function Leaderboard({ currentCity, currentDifficulty, currentSco
 
   return (
     <div style={{
-      background: '#0c1222', border: '1px solid #1e293b', borderRadius: 8,
-      padding: '12px 14px', marginTop: 12, maxWidth: 420, width: '100%',
+      minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '24px 12px',
+      background: 'linear-gradient(160deg, #0a1628, #0f2b3d 40%, #1a2a1a 70%, #0c1222)',
     }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-        Таблиця рекордів
-      </div>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: '#fbbf24', marginBottom: 16 }}>
+        🏆 Таблиця рекордів
+      </h1>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
         <select
           value={filterCity}
           onChange={e => setFilterCity(e.target.value)}
-          style={{ background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 4, padding: '3px 6px', fontSize: 10 }}
+          style={selectStyle}
         >
           <option value="">Всі міста</option>
           {Object.values(CITIES).map(c => (
@@ -40,7 +41,7 @@ export default function Leaderboard({ currentCity, currentDifficulty, currentSco
         <select
           value={filterDiff}
           onChange={e => setFilterDiff(e.target.value)}
-          style={{ background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 4, padding: '3px 6px', fontSize: 10 }}
+          style={selectStyle}
         >
           <option value="">Всі складності</option>
           {Object.entries(MODES).map(([k, m]) => (
@@ -49,34 +50,93 @@ export default function Leaderboard({ currentCity, currentDifficulty, currentSco
         </select>
       </div>
 
-      {loading ? (
-        <div style={{ color: '#475569', fontSize: 10, textAlign: 'center', padding: 12 }}>Завантаження...</div>
-      ) : entries.length === 0 ? (
-        <div style={{ color: '#475569', fontSize: 10, textAlign: 'center', padding: 12 }}>Поки пусто. Будь першим!</div>
-      ) : (
-        <div style={{ maxHeight: 260, overflowY: 'auto' }}>
-          {entries.map((e, i) => {
-            const isMe = currentScore && e.score === currentScore && e.city === currentCity && e.difficulty === currentDifficulty;
+      {/* Table */}
+      <div style={{ width: '100%', maxWidth: 520 }}>
+        {loading ? (
+          <div style={{ color: '#64748b', textAlign: 'center', padding: 40, fontSize: 14 }}>Завантаження...</div>
+        ) : entries.length === 0 ? (
+          <div style={{ color: '#64748b', textAlign: 'center', padding: 40, fontSize: 14 }}>Поки пусто. Будь першим!</div>
+        ) : (
+          entries.map((e, i) => {
+            const isMe = highlightName && e.name === highlightName && e.city === highlightCity && e.difficulty === highlightDifficulty;
+            const isTop3 = i < 3;
+            const fontSize = i === 0 ? 18 : i === 1 ? 16 : i === 2 ? 14 : 12;
+            const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#475569';
+            const cityObj = CITIES[e.city];
+            const modeObj = MODES[e.difficulty];
+
             return (
               <div key={e.id} style={{
-                display: 'flex', gap: 6, alignItems: 'center',
-                padding: '4px 6px', borderRadius: 4, fontSize: 10,
-                background: isMe ? '#4ade8015' : (i % 2 === 0 ? '#0f1724' : 'transparent'),
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: isTop3 ? '10px 12px' : '6px 12px',
+                borderRadius: 8,
+                marginBottom: 3,
+                background: isMe ? '#4ade8012' : (i % 2 === 0 ? '#0f172a' : 'transparent'),
                 border: isMe ? '1px solid #4ade8033' : '1px solid transparent',
               }}>
-                <span style={{ width: 20, textAlign: 'right', color: i < 3 ? ['#fbbf24', '#94a3b8', '#cd7f32'][i] : '#475569', fontWeight: 700 }}>
-                  {i + 1}.
+                {/* Rank */}
+                <span style={{
+                  width: 32, textAlign: 'right', fontWeight: 900,
+                  fontSize: isTop3 ? fontSize + 2 : 12,
+                  color: rankColor,
+                  flexShrink: 0,
+                }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
                 </span>
-                <span style={{ flex: 1, color: '#e2e8f0', fontWeight: 600 }}>{e.name}</span>
-                <span style={{ color: '#fbbf24', fontWeight: 700 }}>{e.score}</span>
-                <span style={{ color: '#64748b', fontSize: 9 }}>💀{e.kills}</span>
-                <span style={{ color: '#64748b', fontSize: 9 }}>🌊{e.waves_survived}</span>
-                <span style={{ fontSize: 9 }}>{e.device === 'mobile' ? '📱' : e.device === 'tablet' ? '📱' : '💻'}</span>
+
+                {/* Name + meta */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize, fontWeight: isTop3 ? 800 : 600,
+                    color: isMe ? '#4ade80' : '#e2e8f0',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {e.name}
+                  </div>
+                  {isTop3 && (
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>
+                      {cityObj?.emoji} {cityObj?.name} · {modeObj?.label} · {e.device === 'mobile' ? '📱' : '💻'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Score */}
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{
+                    fontSize: isTop3 ? fontSize : 13,
+                    fontWeight: 900, color: '#fbbf24',
+                  }}>
+                    {e.score}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#64748b' }}>
+                    💀{e.kills} 🌊{e.waves_survived}
+                  </div>
+                </div>
               </div>
             );
-          })}
-        </div>
+          })
+        )}
+      </div>
+
+      {/* Back button */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            marginTop: 24, padding: '12px 28px', borderRadius: 8,
+            fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1,
+            background: '#1e293b', color: '#94a3b8', border: '1px solid #334155',
+          }}
+        >
+          ← Назад
+        </button>
       )}
     </div>
   );
 }
+
+const selectStyle = {
+  background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155',
+  borderRadius: 6, padding: '8px 12px', fontSize: 13,
+  fontFamily: "'Courier New', monospace",
+};

@@ -1,9 +1,6 @@
-import { useState } from 'react';
 import { CITIES } from '../data/cities.js';
-import Leaderboard from './Leaderboard.jsx';
 
-export default function MainMenu({ onSelectCity }) {
-  const [showLB, setShowLB] = useState(false);
+export default function MainMenu({ onSelectCity, onShowLeaderboard }) {
   return (
     <div style={{
       minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -80,21 +77,15 @@ export default function MainMenu({ onSelectCity }) {
         </div>
 
         <button
-          onClick={() => setShowLB(!showLB)}
+          onClick={onShowLeaderboard}
           style={{
-            marginTop: 20, padding: '10px 24px', borderRadius: 8,
-            fontSize: 13, fontWeight: 700, background: '#1e293b',
-            color: '#e2e8f0', border: '1px solid #334155',
+            marginTop: 20, padding: '12px 28px', borderRadius: 8,
+            fontSize: 14, fontWeight: 700, background: '#1e293b',
+            color: '#fbbf24', border: '1px solid #334155',
           }}
         >
-          🏆 {showLB ? 'Сховати рейтинг' : 'Таблиця рекордів'}
+          🏆 Таблиця рекордів
         </button>
-
-        {showLB && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
-            <Leaderboard />
-          </div>
-        )}
       </div>
     </div>
   );
