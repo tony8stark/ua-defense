@@ -1,0 +1,77 @@
+// Enemy drone rendering
+export function drawEnemies(ctx, g) {
+  for (const en of g.enemies) {
+    // Target line for tower-hunting enemies
+    if (en.target?.mode === 'tower') {
+      const tw = g.towers.find(t => t.id === en.target.id && t.hp > 0);
+      if (tw) {
+        ctx.strokeStyle = '#ef444425';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 6]);
+        ctx.beginPath();
+        ctx.moveTo(en.x, en.y);
+        ctx.lineTo(tw.x, tw.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    // Drone body
+    ctx.save();
+    ctx.translate(en.x, en.y);
+    ctx.rotate(en.angle);
+    const sz = en.sz;
+
+    // Main shape
+    ctx.fillStyle = en.color;
+    ctx.beginPath();
+    ctx.moveTo(sz, 0);
+    ctx.lineTo(-sz * 0.6, -sz * 0.7);
+    ctx.lineTo(-sz * 0.3, 0);
+    ctx.lineTo(-sz * 0.6, sz * 0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    // Wings
+    ctx.fillStyle = en.color + '88';
+    ctx.beginPath();
+    ctx.moveTo(-sz * 0.3, 0);
+    ctx.lineTo(-sz * 0.8, -sz * 0.35);
+    ctx.lineTo(-sz * 0.7, 0);
+    ctx.lineTo(-sz * 0.8, sz * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Special effects per type
+    if (en.type === 'lancet') {
+      ctx.shadowColor = '#f87171';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#f87171';
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    if (en.type === 'shahed238') {
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(
+        en.x - Math.cos(en.angle) * en.sz * 0.6,
+        en.y - Math.sin(en.angle) * en.sz * 0.6,
+        3, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // HP bar
+    const pct = en.hp / en.maxHp;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(en.x - 11, en.y - sz - 7, 22, 3);
+    ctx.fillStyle = pct > 0.5 ? '#ef4444' : '#f59e0b';
+    ctx.fillRect(en.x - 11, en.y - sz - 7, 22 * pct, 3);
+  }
+}

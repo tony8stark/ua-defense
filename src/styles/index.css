@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #080e16;
+  --bg-card: #0c1222;
+  --bg-panel: #111a2b;
+  --border-subtle: #1e293b;
+  --border-panel: #243447;
+  --text-primary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --green: #4ade80;
+  --blue: #38bdf8;
+  --yellow: #fbbf24;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --purple: #a78bfa;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Courier New', monospace;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+canvas {
+  display: block;
+  touch-action: none;
+}
+
+button {
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Scrollbar for battle log */
+.battle-log::-webkit-scrollbar {
+  width: 3px;
+}
+.battle-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+.battle-log::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 2px;
+}

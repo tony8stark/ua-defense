@@ -1,0 +1,78 @@
+// Wave spawning and enemy creation
+import { uid, rnd, chance } from './physics.js';
+import { ENEMY_COLORS, ENEMY_SIZES } from '../data/enemies.js';
+import { getSpawnPos, pickSpawnEdge } from '../data/cities.js';
+
+// Flatten wave definition into shuffled list of enemy types
+export function flatWave(waveDef) {
+  const list = [];
+  for (const g of waveDef.en) {
+    for (let i = 0; i < g.n; i++) list.push(g.t);
+  }
+  // Fisher-Yates shuffle
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+// Pick a target for an enemy
+function pickTarget(g, enemyType) {
+  const tdc = g.mode[enemyType].targetDef;
+  if (chance(tdc)) {
+    const activeDef = g.towers.filter(t => t.hp > 0);
+    if (activeDef.length) {
+      return { mode: 'tower', id: activeDef[Math.floor(Math.random() * activeDef.length)].id };
+    }
+  }
+  const alive = g.buildings.filter(b => b.hp > 0);
+  return alive.length
+    ? { mode: 'building', key: alive[Math.floor(Math.random() * alive.length)].key }
+    : null;
+}
+
+// Spawn a single enemy
+export function spawnEnemy(g, type) {
+  const et = g.mode[type];
+  const target = pickTarget(g, type);
+  if (!target) return;
+
+  const edge = pickSpawnEdge(g.city);
+  const pos = getSpawnPos(g.city, edge);
+
+  g.enemies.push({
+    x: pos.x,
+    y: pos.y,
+    hp: et.hp,
+    maxHp: et.hp,
+    speed: et.speed,
+    dmg: et.dmg,
+    reward: et.reward,
+    color: ENEMY_COLORS[type],
+    sz: ENEMY_SIZES[type],
+    type,
+    target,
+    id: uid(),
+    angle: Math.PI,
+  });
+}
+
+// Re-target an enemy that lost its target
+export function retarget(g, enemy) {
+  enemy.target = pickTarget(g, enemy.type);
+}
+
+// Resolve a target reference to an actual object
+export function getTargetPoint(g, target) {
+  if (!target) return null;
+  if (target.mode === 'building') {
+    const b = g.buildings.find(b => b.key === target.key);
+    return (b && b.hp > 0) ? b : null;
+  }
+  if (target.mode === 'tower') {
+    const t = g.towers.find(t => t.id === target.id);
+    return (t && t.hp > 0) ? t : null;
+  }
+  return null;
+}
