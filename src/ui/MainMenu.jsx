@@ -8,7 +8,7 @@ export default function MainMenu({ onSelectCity }) {
         <div className="text-5xl mb-1">🛡️🇺🇦</div>
         <h1 className="text-2xl font-black tracking-[3px] uppercase mb-1"
           style={{ color: '#38bdf8', textShadow: '0 0 20px rgba(56,189,248,0.3)' }}>
-          Берегова Оборона
+          Тривога
         </h1>
         <p className="text-xs mb-6" style={{ color: '#64748b' }}>
           Обери місто для захисту
