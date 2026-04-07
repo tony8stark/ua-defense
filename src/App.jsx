@@ -374,7 +374,8 @@ export default function App() {
   if (!city || !mode) return null;
 
   return (
-    <div className="min-h-dvh flex flex-col items-center p-1.5 sm:p-2" style={{ background: '#080e16' }}>
+    <div className="min-h-dvh flex flex-col items-center" style={{ background: '#080e16', padding: '4px 4px 0' }}>
+      {/* HUD */}
       <div className="w-full" style={{ maxWidth: 1060 }}>
         <GameHUD
           money={ui.money} killed={ui.killed} score={ui.score}
@@ -383,7 +384,8 @@ export default function App() {
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 6, marginTop: 6, width: '100%', maxWidth: 1060 }}>
+      {/* Canvas + optional sidebar log */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 4, width: '100%', maxWidth: 1060 }}>
         <div ref={containerRef} style={{ flex: '1 1 0%', minWidth: 0, maxWidth: 880 }}>
           <canvas
             ref={canvasRef}
@@ -401,15 +403,35 @@ export default function App() {
               cursor: 'crosshair',
               background: '#0c1222',
               boxShadow: '0 0 40px rgba(0,0,0,0.5)',
-              maxHeight: 'calc(100dvh - 130px)',
               width: '100%',
               display: 'block',
             }}
           />
         </div>
-        <BattleLog logs={ui.logs} />
+        {/* Sidebar log: desktop only */}
+        <div className="hidden lg:flex">
+          <BattleLog logs={ui.logs} />
+        </div>
       </div>
 
+      {/* Mobile log ticker: below canvas on small screens */}
+      <div className="lg:hidden w-full overflow-hidden" style={{ maxWidth: 1060, marginTop: 2 }}>
+        <div style={{
+          display: 'flex', gap: 8, overflowX: 'auto', padding: '3px 4px',
+          fontSize: 10, whiteSpace: 'nowrap',
+          scrollbarWidth: 'none',
+        }}>
+          {ui.logs.slice(0, 4).map((l, i) => (
+            <span key={l.t + '' + i} style={{
+              opacity: 1 - i * 0.2,
+              color: l.msg.includes('ІСКАНДЕР') ? '#ef4444' : l.msg.includes('відбито') ? '#4ade80' : '#94a3b8',
+            }}>{l.msg}</span>
+          ))}
+          {ui.logs.length === 0 && <span style={{ color: '#475569' }}>Очікування...</span>}
+        </div>
+      </div>
+
+      {/* Controls */}
       <div className="w-full" style={{ maxWidth: 1060 }}>
         <BottomBar
           mode={mode} selected={selected} onSelect={setSelected}
@@ -417,15 +439,6 @@ export default function App() {
           onStartWave={startWave} spd={spd}
           onToggleSpeed={() => setSpd(spd >= 3 ? 1 : spd + 1)}
         />
-      </div>
-
-      {/* Mobile battle log */}
-      <div className="md:hidden mt-1.5 w-full" style={{ maxWidth: city.width }}>
-        <div className="flex gap-1 overflow-x-auto text-[9px] py-1 px-1" style={{ color: '#94a3b8' }}>
-          {ui.logs.slice(0, 3).map((l, i) => (
-            <span key={l.t + '' + i} className="whitespace-nowrap">{l.msg}</span>
-          ))}
-        </div>
       </div>
 
       {/* Context menu */}
