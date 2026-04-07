@@ -6,6 +6,7 @@ import { updateIskander } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
 import { addLog } from './state.js';
+import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
 
 // Start a wave
 export function startWave(g) {
@@ -52,6 +53,7 @@ export function update(g) {
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
     addLog(g, `Хвилю ${g.wave} відбито! +${bonus}💰`);
+    playWaveComplete();
     if (g.wave >= g.mode.waves.length) return 'won';
   }
 
@@ -104,6 +106,7 @@ export function update(g) {
       for (let i = 0; i < 8; i++) {
         g.particles.push({ x: en.x, y: en.y, vx: rnd(-2.5, 2.5), vy: rnd(-2.5, 2.5), life: rnd(15, 35), color: '#f59e0b' });
       }
+      playExplosion(true);
       en.hp = 0;
 
       if (g.buildings.every(b => b.hp <= 0)) return 'lost';

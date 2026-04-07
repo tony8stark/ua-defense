@@ -3,6 +3,7 @@ import { TICK, dist, rnd } from './physics.js';
 import { GRID } from '../data/cities.js';
 import { DEF_META } from '../data/units.js';
 import { addLog } from './state.js';
+import { playSiren, playExplosion } from '../audio/SoundManager.js';
 
 export function updateIskander(g) {
   const m = g.mode;
@@ -30,6 +31,7 @@ function spawnWarning(g, m) {
 
   g.iskanderWarn = { x: gx, y: gy, life: m.iskander.warnTicks };
   addLog(g, '🚀 ІСКАНДЕР — УВАГА! Удар через секунди!');
+  playSiren();
 }
 
 function impact(g, m) {
@@ -63,6 +65,7 @@ function impact(g, m) {
 
   // Visual effects
   g.explosions.push({ x: iw.x, y: iw.y, r: 50, life: 40, ml: 40 });
+  playExplosion(true);
   for (let i = 0; i < 20; i++) {
     g.particles.push({
       x: iw.x + rnd(-20, 20), y: iw.y + rnd(-20, 20),

@@ -3,6 +3,7 @@ import { TICK, dist, ang, rnd, chance, uid } from './physics.js';
 import { DEF_META } from '../data/units.js';
 import { addLog } from './state.js';
 import { getEWMultipliers } from './events.js';
+import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 
 export function updateCombat(g) {
   const m = g.mode;
@@ -34,6 +35,7 @@ export function updateCombat(g) {
     tw.cooldown = tw.fireRate;
 
     if (tw.type === 'turret') {
+      if (g.tick % 3 === 0) playShoot(); // throttle sound
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: tw.damage, speed: 7, color: DEF_META.turret.color,
@@ -49,6 +51,7 @@ export function updateCombat(g) {
           color: '#f8717166', trail: [], angle: rnd(0, Math.PI * 2), lost: true, lostTimer: 60,
         });
       } else {
+        playFPVLaunch();
         g.friendlyDrones.push({
           x: tw.x, y: tw.y, tid: closest.id, damage: tw.damage, speed: 3.2, id: uid(),
           color: DEF_META.crew.color, trail: [], angle: 0, hitChance: tw.hitChance, lost: false,
@@ -109,6 +112,7 @@ export function updateCombat(g) {
             g.money += tgt.reward;
             g.score += tgt.reward;
             g.killed++;
+            playExplosion(false);
             // Credit kill to tower
             const src = p.sourceTowerId ? g.towers.find(t => t.id === p.sourceTowerId) : null;
             if (src) src.kills = (src.kills || 0) + 1;

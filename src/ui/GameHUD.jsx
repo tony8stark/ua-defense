@@ -1,7 +1,18 @@
 import { MODES } from '../data/difficulty.js';
+import { isMuted, setMuted, resumeOnInteraction } from '../audio/SoundManager.js';
+import { useState } from 'react';
 
 export default function GameHUD({ money, killed, score, wave, waveActive, totalWaves, difficulty, buildings, bHp, weather, ewActive }) {
   const m = MODES[difficulty];
+  const [muted, _setMuted] = useState(isMuted());
+
+  const toggleMute = () => {
+    resumeOnInteraction();
+    const next = !muted;
+    setMuted(next);
+    _setMuted(next);
+  };
+
   return (
     <div style={{
       display: 'flex', gap: 6, fontSize: 12, fontWeight: 700,
@@ -17,9 +28,15 @@ export default function GameHUD({ money, killed, score, wave, waveActive, totalW
         <span style={{ fontSize: 10 }}>{weather.label}</span>
       )}
       {ewActive && (
-        <span style={{ fontSize: 10, color: '#f59e0b', animation: 'none' }}>⚡РЕБ</span>
+        <span style={{ fontSize: 10, color: '#f59e0b' }}>⚡РЕБ</span>
       )}
       <span style={{ fontSize: 10, color: m?.color }}>{m?.label}</span>
+      <button
+        onClick={toggleMute}
+        style={{ fontSize: 14, background: 'none', color: muted ? '#475569' : '#e2e8f0', padding: '0 2px' }}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
       <span style={{ display: 'flex', gap: 2 }}>
         {buildings.map(b => (
           <span key={b.key} style={{ fontSize: 14, opacity: (bHp[b.key] || 0) > 0 ? 1 : 0.25 }}>

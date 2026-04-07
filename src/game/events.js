@@ -1,6 +1,7 @@
 // Random events: F-16, EW jamming, weather
 import { TICK, rnd, uid } from './physics.js';
 import { addLog } from './state.js';
+import { playJetFlyby, playEWBuzz } from '../audio/SoundManager.js';
 
 // ====== F-16 VIPER ======
 
@@ -22,6 +23,7 @@ export function trySpawnF16(g) {
   };
   g.f16Cooldown = 3; // can't appear for next 3 waves
   addLog(g, '🛩️ F-16 Viper на підході!');
+  playJetFlyby();
 }
 
 export function updateF16(g) {
@@ -127,6 +129,7 @@ export function trySpawnEW(g) {
   g.ewActive = { timer: rnd(140, 200), maxTimer: 200 };
   g.ewCooldown = 2;
   addLog(g, '📡 РЕБ АКТИВНИЙ! Зв\'язок порушено!');
+  playEWBuzz();
 }
 
 export function updateEW(g) {

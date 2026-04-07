@@ -5,6 +5,7 @@ import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_
 import { uid, rnd, dist } from './game/physics.js';
 import { createGameState, getUIState, addLog } from './game/state.js';
 import { getCallsign } from './data/callsigns.js';
+import { playPlace, playSell, playGameOver, playWaveComplete, resumeOnInteraction } from './audio/SoundManager.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
 import { draw } from './game/renderer/index.js';
 import { screenToCanvas } from './hooks/useCanvasScale.js';
@@ -127,6 +128,7 @@ export default function App() {
     }
 
     g.money -= cost;
+    playPlace();
     syncUI();
   }, [ctxMenu]);
 
@@ -200,6 +202,7 @@ export default function App() {
     }
     g.money += price;
     addLog(g, `💰 ${DEF_META[t.type].name} продано (+${price})`);
+    playSell();
     setCtxMenu(null);
     syncUI();
   }, []);
@@ -300,6 +303,7 @@ export default function App() {
 
   // Enhanced click handler that also checks for Iskander scramble
   const handleCanvasClick = useCallback((e) => {
+    resumeOnInteraction();
     if (phaseRef.current !== 'playing') return;
     const g = gRef.current;
     if (!g) return;
@@ -346,8 +350,8 @@ export default function App() {
 
       for (let step = 0; step < spdRef.current; step++) {
         const result = gameUpdate(g);
-        if (result === 'won') { phaseRef.current = 'won'; setPhase('won'); setUI(getUIState(g)); return; }
-        if (result === 'lost') { phaseRef.current = 'lost'; setPhase('lost'); setUI(getUIState(g)); return; }
+        if (result === 'won') { phaseRef.current = 'won'; setPhase('won'); setUI(getUIState(g)); playWaveComplete(); return; }
+        if (result === 'lost') { phaseRef.current = 'lost'; setPhase('lost'); setUI(getUIState(g)); playGameOver(); return; }
       }
 
       draw(ctx, g, hoverRef.current, selectedRef.current);
