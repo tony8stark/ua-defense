@@ -20,7 +20,7 @@ export default function BattleLog({ logs, towers }) {
       width: 170, fontSize: 11, borderRadius: 8, padding: 10,
       background: '#111a2b', border: '1px solid #243447', color: '#cbd5e1',
       display: 'flex', flexDirection: 'column', flexShrink: 0,
-      height: '100%', maxHeight: 'calc(100dvh - 90px)', overflow: 'hidden',
+      height: '100%', overflow: 'hidden',
     }}>
       {/* Top units */}
       {topUnits.length > 0 && (

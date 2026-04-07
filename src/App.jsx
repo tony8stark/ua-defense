@@ -401,8 +401,8 @@ export default function App() {
         />
       </div>
 
-      {/* Canvas + sidebar */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 3, width: '100%', maxWidth: 1200 }}>
+      {/* Canvas + sidebar: constrained to available space */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 3, width: '100%', maxWidth: 1200, flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}>
         <div ref={containerRef} style={{ flex: '1 1 0%', minWidth: 0 }}>
           <canvas
             ref={canvasRef}
@@ -421,12 +421,12 @@ export default function App() {
               background: '#0c1222',
               display: 'block',
               width: '100%',
-              maxHeight: 'calc(100dvh - 110px)',
+              maxHeight: '100%',
             }}
           />
         </div>
-        {/* Sidebar log: desktop only */}
-        <div className="hidden lg:flex" style={{ flexShrink: 0 }}>
+        {/* Sidebar log: desktop only, stretches to canvas height */}
+        <div className="hidden lg:flex" style={{ flexShrink: 0, maxHeight: '100%' }}>
           <BattleLog logs={ui.logs} towers={ui.towers} />
         </div>
       </div>
