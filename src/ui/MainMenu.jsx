@@ -19,11 +19,13 @@ export default function MainMenu({ onSelectCity }) {
             <button
               key={city.id}
               onClick={() => onSelectCity(city.id)}
-              className="text-left p-5 rounded-xl w-52 transition-all duration-200"
+              className="text-left rounded-xl transition-all duration-200"
               style={{
                 background: '#0c1222',
                 border: `2px solid ${city.color}44`,
                 color: city.color,
+                padding: '20px 24px',
+                width: 260,
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = city.color;
