@@ -4,6 +4,7 @@ export const ENEMY_COLORS = {
   shahed238: '#fbbf24',
   geran: '#cbd5e1',
   lancet: '#f87171',
+  guided: '#ff6b6b', // operator-guided, red with pulsing eye
 };
 
 export const ENEMY_SIZES = {
@@ -11,6 +12,5 @@ export const ENEMY_SIZES = {
   shahed238: 12,
   geran: 11,
   lancet: 9,
+  guided: 15, // slightly larger, menacing
 };
-
-// Per-difficulty enemy stats are in difficulty.js

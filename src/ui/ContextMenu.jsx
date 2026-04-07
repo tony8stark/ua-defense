@@ -54,15 +54,20 @@ function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
 
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: meta.color, marginBottom: 4 }}>
-        {meta.emoji} {meta.name}
-        <span style={{ fontSize: 8, color: '#64748b', marginLeft: 6 }}>
-          Рів.{level + 1}/{maxLevel + 1}
+      <div style={{ fontSize: 11, fontWeight: 700, color: meta.color, marginBottom: 2 }}>
+        {meta.emoji} "{item.callsign || '???'}"
+        <span style={{ fontSize: 8, color: '#64748b', marginLeft: 4 }}>
+          {item.type !== 'decoy' ? `Рів.${level + 1}/${maxLevel + 1}` : ''}
         </span>
       </div>
+      <div style={{ fontSize: 8, color: '#556678', marginBottom: 3 }}>{meta.name}</div>
 
       <div style={{ fontSize: 8, color: '#94a3b8', marginBottom: 6, lineHeight: 1.6 }}>
-        HP: {item.hp}/{item.maxHp} | 🎯{Math.round((item.hitChance || 0) * 100)}% | ⚡{item.damage}
+        {item.type !== 'decoy' ? (
+          <>HP: {item.hp}/{item.maxHp} | 🎯{Math.round((item.hitChance || 0) * 100)}% | ⚡{item.damage} | 💀{item.kills || 0}</>
+        ) : (
+          <>HP: {item.hp}/{item.maxHp} | 🪤 Хибна ціль для Ланцетів</>
+        )}
       </div>
 
       {canUpgrade && (

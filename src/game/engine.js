@@ -1,8 +1,9 @@
 // Main game update loop: orchestrates spawning, movement, combat, effects
-import { TICK, dist, ang, rnd } from './physics.js';
+import { TICK, dist, ang, rnd, chance } from './physics.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
+import { trySpawnF16, updateF16, trySpawnEW, updateEW, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
 import { addLog } from './state.js';
 
@@ -14,10 +15,21 @@ export function startWave(g) {
   g.spawnTimer = 0;
   g.waveActive = true;
   g.waveDelay = waveDef.d;
+
+  // Roll new weather for this wave
+  g.weather = rollWeather();
+  if (g.weather.id !== 'clear') {
+    addLog(g, `${g.weather.label}`);
+  }
+
+  // Try spawn events at wave start
+  trySpawnF16(g);
+  trySpawnEW(g);
+
   return true;
 }
 
-// One game tick (called speed-multiplier times per frame)
+// One game tick
 export function update(g) {
   g.tick++;
 
@@ -36,10 +48,11 @@ export function update(g) {
     g.wave++;
     const bonus = g.mode.waveBonus + g.wave * 10;
     g.money += bonus;
+    g.weather = rollWeather(); // reset weather between waves
+    if (g.f16Cooldown > 0) g.f16Cooldown--;
+    if (g.ewCooldown > 0) g.ewCooldown--;
     addLog(g, `Хвилю ${g.wave} відбито! +${bonus}💰`);
-    if (g.wave >= g.mode.waves.length) {
-      return 'won';
-    }
+    if (g.wave >= g.mode.waves.length) return 'won';
   }
 
   // Move enemies toward targets
@@ -48,18 +61,40 @@ export function update(g) {
     if (!to) { retarget(g, en); to = getTargetPoint(g, en.target); }
     if (!to) continue;
 
+    // Guided drones actively retarget nearest tower each tick
+    if (en.type === 'guided' && g.tick % 20 === 0) {
+      retarget(g, en);
+      to = getTargetPoint(g, en.target) || to;
+    }
+
     const a = ang(en, to);
-    en.x += Math.cos(a) * en.speed * TICK;
-    en.y += Math.sin(a) * en.speed * TICK;
+
+    // Wind drift
+    let driftX = 0, driftY = 0;
+    if (g.weather?.effects?.drift) {
+      driftX = Math.sin(g.tick * 0.05 + en.id * 3) * 0.3;
+      driftY = Math.cos(g.tick * 0.03 + en.id * 7) * 0.15;
+    }
+
+    // Guided drones zigzag
+    if (en.type === 'guided') {
+      const zigzag = Math.sin(g.tick * 0.15 + en.id) * 0.8;
+      driftX += Math.cos(a + Math.PI / 2) * zigzag;
+      driftY += Math.sin(a + Math.PI / 2) * zigzag;
+    }
+
+    en.x += (Math.cos(a) * en.speed + driftX) * TICK;
+    en.y += (Math.sin(a) * en.speed + driftY) * TICK;
     en.angle = a;
 
     if (dist(en, to) < 28) {
       to.hp = Math.max(0, to.hp - en.dmg);
 
-      if (en.target.mode === 'tower' && to.hp <= 0) {
-        addLog(g, `⚠️ ${DEF_META[to.type]?.name || 'Позицію'} знищено!`);
-        if (to.type === 'airfield') {
-          g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== to.id);
+      if (en.target.mode === 'tower') {
+        const name = to.callsign ? `"${to.callsign}" (${DEF_META[to.type]?.name})` : DEF_META[to.type]?.name || 'Позицію';
+        if (to.hp <= 0) {
+          addLog(g, `⚠️ ${name} знищено!`);
+          if (to.type === 'airfield') g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== to.id);
         }
       } else if (en.target.mode === 'building') {
         addLog(g, `💥 ${to.name} під ударом! (${to.hp}/${to.maxHp})`);
@@ -71,23 +106,25 @@ export function update(g) {
       }
       en.hp = 0;
 
-      if (g.buildings.every(b => b.hp <= 0)) {
-        return 'lost';
-      }
+      if (g.buildings.every(b => b.hp <= 0)) return 'lost';
     }
   }
 
   g.enemies = g.enemies.filter(e => e.hp > 0);
   g.towers = g.towers.filter(t => t.hp > 0 || (t.deathTimer || 0) > 0);
 
-  // Combat: towers fire, projectiles move, FPV drones
+  // Combat
   updateCombat(g);
-
-  // Filter dead enemies again (combat may have killed some)
   g.enemies = g.enemies.filter(e => e.hp > 0);
 
-  // Iskander strikes
+  // Iskander
   updateIskander(g);
+
+  // F-16
+  updateF16(g);
+
+  // EW
+  updateEW(g);
 
   // Effects decay
   for (const ex of g.explosions) ex.life--;
@@ -99,5 +136,5 @@ export function update(g) {
   for (const f of g.floats) { f.y -= 0.4; f.life--; }
   g.floats = g.floats.filter(f => f.life > 0);
 
-  return null; // game continues
+  return null;
 }

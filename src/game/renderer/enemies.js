@@ -66,6 +66,24 @@ export function drawEnemies(ctx, g) {
       ctx.fill();
       ctx.shadowBlur = 0;
     }
+    if (en.type === 'guided') {
+      // Pulsing red "eye"
+      const pulse = Math.sin(g.tick * 0.2) * 0.4 + 0.6;
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 10 * pulse;
+      ctx.fillStyle = `rgba(255,0,0,${pulse})`;
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // "ОПЕРАТОР" label
+      if (g.tick % 60 < 40) {
+        ctx.font = "bold 7px 'Courier New'";
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ff6b6b88';
+        ctx.fillText('ОПЕРАТОР', en.x, en.y - sz - 12);
+      }
+    }
 
     // HP bar
     const pct = en.hp / en.maxHp;

@@ -3,6 +3,7 @@ export const DEF_META = {
   turret: { name: 'ЗУ Турель', color: '#4ade80', emoji: '🔫' },
   crew: { name: 'Екіпаж FPV', color: '#38bdf8', emoji: '🎮' },
   airfield: { name: 'Аеродром', color: '#f59e0b', emoji: '🛫' },
+  decoy: { name: 'Хибна ціль', color: '#94a3b8', emoji: '🪤' },
 };
 
 // Upgrade trees: each level gives multipliers applied to base stats

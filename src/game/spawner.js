@@ -55,6 +55,7 @@ export function spawnEnemy(g, type) {
     target,
     id: uid(),
     angle: Math.PI,
+    dodgeChance: et.dodgeChance || 0,
   });
 }
 

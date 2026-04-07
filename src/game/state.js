@@ -1,8 +1,11 @@
 // Game state factory: creates a fresh game state for a given city + difficulty
 import { uid, resetIds, rnd } from './physics.js';
+import { resetCallsigns } from '../data/callsigns.js';
+import { rollWeather } from './events.js';
 
 export function createGameState(city, mode) {
   resetIds();
+  resetCallsigns();
 
   const buildings = city.buildings.map(b => ({
     ...b,
@@ -34,6 +37,12 @@ export function createGameState(city, mode) {
     iskanderTimer: rnd(mode.iskander.interval[0], mode.iskander.interval[1]),
     iskanderWarn: null,
     logs: [],
+    // Events
+    f16: null,
+    f16Cooldown: 0,
+    ewActive: null,
+    ewCooldown: 0,
+    weather: rollWeather(),
   };
 }
 
@@ -42,7 +51,7 @@ export function getUIState(g) {
   const bHp = {};
   g.buildings.forEach(b => { bHp[b.key] = b.hp; });
 
-  const counts = { turret: 0, crew: 0, airfield: 0 };
+  const counts = { turret: 0, crew: 0, airfield: 0, decoy: 0 };
   g.towers.filter(t => t.hp > 0).forEach(t => { counts[t.type]++; });
 
   return {
@@ -54,9 +63,12 @@ export function getUIState(g) {
     bHp,
     counts,
     logs: g.logs,
+    weather: g.weather,
+    ewActive: !!g.ewActive,
+    f16Active: !!g.f16,
   };
 }
 
 export function addLog(g, msg) {
-  g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 6);
+  g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 8);
 }

@@ -5,7 +5,7 @@ export default function BottomBar({ mode, selected, onSelect, counts, waveActive
 
   return (
     <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-      {['turret', 'crew', 'airfield'].map(key => {
+      {['turret', 'crew', 'airfield', 'decoy'].map(key => {
         const d = mode[key];
         const meta = DEF_META[key];
         const c = counts[key] || 0;
@@ -33,7 +33,8 @@ export default function BottomBar({ mode, selected, onSelect, counts, waveActive
           >
             <div style={{ fontSize: 13, fontWeight: 700 }}>{meta.emoji} {meta.name}</div>
             <div style={{ fontSize: 9, marginTop: 2, color: '#3a4a5a' }}>
-              💰{cost} ⚡{d.damage} 🎯{Math.round(d.hitChance * 100)}%
+              💰{cost} {d.damage ? `⚡${d.damage}` : ''} {d.hitChance ? `🎯${Math.round(d.hitChance * 100)}%` : ''}
+              {key === 'decoy' && '🪤 Приманка'}
             </div>
             <div style={{ fontSize: 9, marginTop: 1, color: mx ? '#ef4444' : '#2a3545' }}>
               {c}/{d.maxCount} {mx ? 'МАКС' : ''} {d.lossChance ? `📡${Math.round((1 - d.lossChance) * 100)}%` : ''}

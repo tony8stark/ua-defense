@@ -4,6 +4,7 @@ import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
 import { createGameState, getUIState, addLog } from './game/state.js';
+import { getCallsign } from './data/callsigns.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
 import { draw } from './game/renderer/index.js';
 import { screenToCanvas } from './hooks/useCanvasScale.js';
@@ -113,7 +114,7 @@ export default function App() {
       if (Math.sqrt((gx - b.x) ** 2 + (gy - b.y) ** 2) < 45) return;
     }
 
-    const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0 };
+    const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0, callsign: getCallsign(), kills: 0 };
     g.towers.push(tower);
 
     if (sel === 'airfield') {
@@ -381,6 +382,7 @@ export default function App() {
           money={ui.money} killed={ui.killed} score={ui.score}
           wave={ui.wave} waveActive={ui.waveActive} totalWaves={mode.waves.length}
           difficulty={difficulty} buildings={city.buildings} bHp={ui.bHp}
+          weather={ui.weather} ewActive={ui.ewActive}
         />
       </div>
 
