@@ -14,7 +14,7 @@ export default function MainMenu({ onSelectCity }) {
           Обери місто для захисту
         </p>
 
-        <div className="flex gap-3 justify-center flex-wrap">
+        <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'stretch' }}>
           {Object.values(CITIES).map(city => (
             <button
               key={city.id}
@@ -26,6 +26,8 @@ export default function MainMenu({ onSelectCity }) {
                 color: city.color,
                 padding: '20px 24px',
                 width: 260,
+                display: 'flex',
+                flexDirection: 'column',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = city.color;
@@ -38,14 +40,11 @@ export default function MainMenu({ onSelectCity }) {
             >
               <div className="text-2xl mb-2">{city.emoji}</div>
               <div className="text-base font-black mb-2">{city.name}</div>
-              <div className="text-[9px] leading-relaxed" style={{ color: '#94a3b8' }}>{city.desc}</div>
-              {city.bonuses?.turretAccuracy && (
-                <div className="text-[8px] mt-3" style={{ color: '#4ade80' }}>
-                  🎯 Patriot: +{Math.round(city.bonuses.turretAccuracy * 100)}% точність турелей
-                </div>
-              )}
-              <div className="text-[8px] mt-1.5" style={{ color: '#475569' }}>
-                📍 {city.spawnEdges.length > 1 ? 'Атака з кількох напрямків' : 'Атака з моря'}
+              <div className="text-[9px] leading-relaxed mb-3" style={{ color: '#94a3b8' }}>{city.desc}</div>
+              <div style={{ marginTop: 'auto' }}>
+                {city.hints?.map((hint, i) => (
+                  <div key={i} className="text-[8px] leading-loose" style={{ color: '#64748b' }}>{hint}</div>
+                ))}
               </div>
             </button>
           ))}
