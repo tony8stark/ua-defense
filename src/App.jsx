@@ -370,7 +370,10 @@ export default function App() {
   if (phase === 'menu') return <MainMenu onSelectCity={selectCity} />;
   if (phase === 'difficulty') return <DifficultySelect cityId={cityId} onSelect={selectDifficulty} onBack={goMenu} />;
   if (phase === 'won' || phase === 'lost') {
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} onMenu={goMenu} />;
+    // Find MVP tower (most kills)
+    const g = gRef.current;
+    const mvp = g?.towers?.filter(t => (t.kills || 0) > 0).sort((a, b) => (b.kills || 0) - (a.kills || 0))[0] || null;
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} mvp={mvp} onMenu={goMenu} />;
   }
 
   // PLAYING
