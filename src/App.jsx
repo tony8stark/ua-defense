@@ -382,9 +382,12 @@ export default function App() {
   if (!city || !mode) return null;
 
   return (
-    <div className="min-h-dvh flex flex-col items-center" style={{ background: '#080e16', padding: '4px 4px 0' }}>
+    <div style={{
+      background: '#080e16', padding: '3px 3px env(safe-area-inset-bottom, 4px)',
+      minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
       {/* HUD */}
-      <div className="w-full" style={{ maxWidth: 1060 }}>
+      <div style={{ width: '100%', maxWidth: 1060, flexShrink: 0 }}>
         <GameHUD
           money={ui.money} killed={ui.killed} score={ui.score}
           wave={ui.wave} waveActive={ui.waveActive} totalWaves={mode.waves.length}
@@ -393,8 +396,8 @@ export default function App() {
         />
       </div>
 
-      {/* Canvas + optional sidebar log */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 4, width: '100%', maxWidth: 1060 }}>
+      {/* Canvas area */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 3, width: '100%', maxWidth: 1060 }}>
         <div ref={containerRef} style={{ flex: '1 1 0%', minWidth: 0, maxWidth: 880 }}>
           <canvas
             ref={canvasRef}
@@ -411,7 +414,6 @@ export default function App() {
               border: '1px solid #1e293b',
               cursor: 'crosshair',
               background: '#0c1222',
-              boxShadow: '0 0 40px rgba(0,0,0,0.5)',
               width: '100%',
               display: 'block',
             }}
@@ -423,16 +425,15 @@ export default function App() {
         </div>
       </div>
 
-      {/* Mobile log ticker: below canvas on small screens */}
-      <div className="lg:hidden w-full overflow-hidden" style={{ maxWidth: 1060, marginTop: 2 }}>
+      {/* Mobile log ticker */}
+      <div className="lg:hidden" style={{ width: '100%', maxWidth: 1060, flexShrink: 0, marginTop: 4 }}>
         <div style={{
-          display: 'flex', gap: 8, overflowX: 'auto', padding: '3px 4px',
-          fontSize: 10, whiteSpace: 'nowrap',
-          scrollbarWidth: 'none',
+          display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 4px',
+          fontSize: 11, whiteSpace: 'nowrap', scrollbarWidth: 'none',
         }}>
-          {ui.logs.slice(0, 4).map((l, i) => (
+          {ui.logs.slice(0, 3).map((l, i) => (
             <span key={l.t + '' + i} style={{
-              opacity: 1 - i * 0.2,
+              opacity: 1 - i * 0.25,
               color: l.msg.includes('ІСКАНДЕР') ? '#ef4444' : l.msg.includes('відбито') ? '#4ade80' : '#94a3b8',
             }}>{l.msg}</span>
           ))}
@@ -441,7 +442,7 @@ export default function App() {
       </div>
 
       {/* Controls */}
-      <div className="w-full" style={{ maxWidth: 1060 }}>
+      <div style={{ width: '100%', maxWidth: 880, flexShrink: 0 }}>
         <BottomBar
           mode={mode} selected={selected} onSelect={setSelected}
           counts={ui.counts} waveActive={ui.waveActive} wave={ui.wave}

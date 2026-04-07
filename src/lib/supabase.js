@@ -9,6 +9,13 @@ const headers = {
   Prefer: 'return=minimal',
 };
 
+export function detectDevice() {
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet/i.test(ua)) return 'tablet';
+  if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
 export async function submitScore({ name, score, city, difficulty, wavesSurvived, kills }) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
     method: 'POST',
@@ -20,6 +27,7 @@ export async function submitScore({ name, score, city, difficulty, wavesSurvived
       difficulty,
       waves_survived: wavesSurvived,
       kills,
+      device: detectDevice(),
     }),
   });
   return res.ok;
@@ -27,7 +35,7 @@ export async function submitScore({ name, score, city, difficulty, wavesSurvived
 
 export async function fetchLeaderboard(city, difficulty, limit = 20) {
   const params = new URLSearchParams({
-    select: 'id,name,score,city,difficulty,waves_survived,kills,created_at',
+    select: 'id,name,score,city,difficulty,waves_survived,kills,device,created_at',
     order: 'score.desc',
     limit: String(limit),
   });

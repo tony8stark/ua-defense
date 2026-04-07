@@ -71,6 +71,7 @@ export default function Leaderboard({ currentCity, currentDifficulty, currentSco
                 <span style={{ color: '#fbbf24', fontWeight: 700 }}>{e.score}</span>
                 <span style={{ color: '#64748b', fontSize: 9 }}>💀{e.kills}</span>
                 <span style={{ color: '#64748b', fontSize: 9 }}>🌊{e.waves_survived}</span>
+                <span style={{ fontSize: 9 }}>{e.device === 'mobile' ? '📱' : e.device === 'tablet' ? '📱' : '💻'}</span>
               </div>
             );
           })}
