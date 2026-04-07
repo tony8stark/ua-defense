@@ -37,6 +37,17 @@ export function drawTowers(ctx, g) {
       ctx.fillStyle = pct > 0.5 ? mc.color : '#ef4444';
       ctx.fillRect(tw.x - 14, tw.y - 22, 28 * pct, 3);
     }
+
+    // Upgrade level rings
+    const level = tw.level || 0;
+    if (alive && level > 0) {
+      ctx.strokeStyle = mc.color + '55';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(tw.x, tw.y, 19, 0, Math.PI * 2); ctx.stroke();
+      if (level >= 2) {
+        ctx.beginPath(); ctx.arc(tw.x, tw.y, 22, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
     ctx.globalAlpha = 1;
   }
 }

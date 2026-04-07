@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CITIES, GRID } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
-import { DEF_META, getCost } from './data/units.js';
-import { uid, rnd } from './game/physics.js';
-import { createGameState, getUIState } from './game/state.js';
+import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
+import { uid, rnd, dist } from './game/physics.js';
+import { createGameState, getUIState, addLog } from './game/state.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
 import { draw } from './game/renderer/index.js';
 import { screenToCanvas } from './hooks/useCanvasScale.js';
@@ -13,14 +13,16 @@ import ResultsScreen from './ui/ResultsScreen.jsx';
 import GameHUD from './ui/GameHUD.jsx';
 import BattleLog from './ui/BattleLog.jsx';
 import BottomBar from './ui/BottomBar.jsx';
+import ContextMenu from './ui/ContextMenu.jsx';
 
 export default function App() {
-  const [phase, setPhase] = useState('menu'); // menu | difficulty | playing | won | lost
+  const [phase, setPhase] = useState('menu');
   const [cityId, setCityId] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
   const [selected, _setSelected] = useState('turret');
   const [spd, _setSpd] = useState(1);
   const [ui, setUI] = useState({ money: 0, score: 0, wave: 0, killed: 0, waveActive: false, bHp: {}, counts: {}, logs: [] });
+  const [ctxMenu, setCtxMenu] = useState(null); // { type: 'tower'|'building', item, screenX, screenY }
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -33,9 +35,10 @@ export default function App() {
 
   const setSelected = (v) => { selectedRef.current = v; _setSelected(v); };
   const setSpd = (v) => { spdRef.current = v; _setSpd(v); };
+  const syncUI = () => { const g = gRef.current; if (g) setUI(getUIState(g)); };
 
   // Phase transitions
-  const goMenu = useCallback(() => { phaseRef.current = 'menu'; setPhase('menu'); }, []);
+  const goMenu = useCallback(() => { phaseRef.current = 'menu'; setPhase('menu'); setCtxMenu(null); }, []);
   const selectCity = useCallback((id) => { setCityId(id); setPhase('difficulty'); }, []);
   const selectDifficulty = useCallback((d) => {
     setDifficulty(d);
@@ -48,21 +51,51 @@ export default function App() {
     const g = gRef.current;
     if (!g) return;
     engineStartWave(g);
-    setUI(getUIState(g));
+    setCtxMenu(null);
+    syncUI();
   }, []);
 
-  // Place tower on click
+  // Find tower or building at canvas position
+  function findTargetAt(g, pos) {
+    // Check towers first
+    for (const t of g.towers) {
+      if (t.hp > 0 && dist(t, pos) < 20) {
+        return { type: 'tower', item: { ...t, _mode: g.mode } };
+      }
+    }
+    // Check buildings
+    for (const b of g.buildings) {
+      if (dist(b, pos) < 30) {
+        return { type: 'building', item: b };
+      }
+    }
+    return null;
+  }
+
+  // Left click: place tower OR open context menu on existing tower/building
   const handleClick = useCallback((e) => {
     if (phaseRef.current !== 'playing') return;
     const g = gRef.current;
     if (!g) return;
+
+    // Close context menu if open
+    if (ctxMenu) { setCtxMenu(null); return; }
+
     const city = g.city;
     const m = g.mode;
     const pos = screenToCanvas(e, canvasRef.current, city.width, city.height);
-    const sel = selectedRef.current;
-    const def = m[sel];
     const zone = city.placeZone;
 
+    // Check if clicking on existing tower or building
+    const target = findTargetAt(g, pos);
+    if (target) {
+      setCtxMenu({ ...target, screenX: e.clientX, screenY: e.clientY });
+      return;
+    }
+
+    // Place new tower
+    const sel = selectedRef.current;
+    const def = m[sel];
     const existing = g.towers.filter(t => t.type === sel && t.hp > 0).length;
     if (existing >= def.maxCount) return;
 
@@ -73,16 +106,14 @@ export default function App() {
     const gx = Math.floor(pos.x / GRID) * GRID + GRID / 2;
     const gy = Math.floor(pos.y / GRID) * GRID + GRID / 2;
 
-    // Check collisions with existing towers
     for (const t of g.towers) {
       if (t.hp > 0 && Math.abs(t.x - gx) < GRID * 0.8 && Math.abs(t.y - gy) < GRID * 0.8) return;
     }
-    // Check collisions with buildings
     for (const b of g.buildings) {
       if (Math.sqrt((gx - b.x) ** 2 + (gy - b.y) ** 2) < 45) return;
     }
 
-    const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp };
+    const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0 };
     g.towers.push(tower);
 
     if (sel === 'airfield') {
@@ -95,31 +126,192 @@ export default function App() {
     }
 
     g.money -= cost;
-    setUI(getUIState(g));
+    syncUI();
+  }, [ctxMenu]);
+
+  // Right click: context menu
+  const handleRightClick = useCallback((e) => {
+    e.preventDefault();
+    if (phaseRef.current !== 'playing') return;
+    const g = gRef.current;
+    if (!g) return;
+    const pos = screenToCanvas(e, canvasRef.current, g.city.width, g.city.height);
+    const target = findTargetAt(g, pos);
+    if (target) {
+      setCtxMenu({ ...target, screenX: e.clientX, screenY: e.clientY });
+    } else {
+      setCtxMenu(null);
+    }
   }, []);
 
-  // Hover for placement preview
+  // Hover
   const handleMove = useCallback((e) => {
     if (phaseRef.current !== 'playing') return;
     const g = gRef.current;
     if (!g) return;
-    const city = g.city;
-    const zone = city.placeZone;
-    const pos = screenToCanvas(e, canvasRef.current, city.width, city.height);
+    const zone = g.city.placeZone;
+    const pos = screenToCanvas(e, canvasRef.current, g.city.width, g.city.height);
     hoverRef.current = (pos.x >= zone.left && pos.x <= zone.right)
       ? { x: Math.floor(pos.x / GRID) * GRID + GRID / 2, y: Math.floor(pos.y / GRID) * GRID + GRID / 2 }
       : null;
   }, []);
 
-  // Touch support: treat touchstart as click
-  const handleTouch = useCallback((e) => {
+  // Touch: tap to place/select, long-press for context menu
+  const touchTimer = useRef(null);
+  const handleTouchStart = useCallback((e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    if (touch) {
-      // Simulate mouse event for handleClick
-      handleClick({ clientX: touch.clientX, clientY: touch.clientY });
+    if (!touch) return;
+    const evt = { clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} };
+
+    // Long press = context menu (300ms)
+    touchTimer.current = setTimeout(() => {
+      touchTimer.current = null;
+      handleRightClick({ ...evt, preventDefault: () => {} });
+    }, 300);
+
+    // Store for short tap detection
+    touchTimer.current._evt = evt;
+  }, [handleRightClick]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (touchTimer.current) {
+      const evt = touchTimer.current._evt;
+      clearTimeout(touchTimer.current);
+      touchTimer.current = null;
+      // Short tap = normal click
+      if (evt) handleClick(evt);
     }
   }, [handleClick]);
+
+  // === M3 ACTIONS ===
+
+  // Sell tower
+  const handleSell = useCallback((tower) => {
+    const g = gRef.current;
+    if (!g) return;
+    const t = g.towers.find(tw => tw.id === tower.id);
+    if (!t || t.hp <= 0) return;
+    const price = getSellPrice(t);
+    t.hp = 0;
+    if (t.type === 'airfield') {
+      g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== t.id);
+    }
+    g.money += price;
+    addLog(g, `💰 ${DEF_META[t.type].name} продано (+${price})`);
+    setCtxMenu(null);
+    syncUI();
+  }, []);
+
+  // Upgrade tower
+  const handleUpgrade = useCallback((tower) => {
+    const g = gRef.current;
+    if (!g || g.waveActive) return;
+    const t = g.towers.find(tw => tw.id === tower.id);
+    if (!t || t.hp <= 0) return;
+    const level = t.level || 0;
+    const nextLevel = level + 1;
+    const upgrade = UPGRADES[t.type]?.[nextLevel];
+    if (!upgrade) return;
+    const cost = getUpgradeCost(t, g.mode);
+    if (g.money < cost) return;
+
+    // Apply stat multipliers
+    for (const [stat, mul] of Object.entries(upgrade.stats)) {
+      if (stat === 'lossChance') {
+        // lossChance is on the mode, not the tower; store override on tower
+        t.lossChanceOverride = (t.lossChanceOverride || g.mode.crew.lossChance) * mul;
+      } else if (stat === 'fireRate') {
+        t[stat] = Math.round(t[stat] * mul); // lower = faster
+      } else {
+        t[stat] = Math.round(t[stat] * mul * 100) / 100;
+      }
+    }
+    t.level = nextLevel;
+    t.hp = Math.min(t.hp + 20, t.maxHp); // small heal on upgrade
+    g.money -= cost;
+
+    // Update kukurznik stats if airfield
+    if (t.type === 'airfield') {
+      const k = g.kukurzniki.find(ku => ku.towerId === t.id);
+      if (k) {
+        if (upgrade.stats.range) k.range = Math.round(k.range * upgrade.stats.range * 100) / 100;
+        if (upgrade.stats.damage) k.damage = Math.round(k.damage * upgrade.stats.damage * 100) / 100;
+        if (upgrade.stats.hitChance) k.hitChance = Math.round(k.hitChance * upgrade.stats.hitChance * 100) / 100;
+      }
+    }
+
+    addLog(g, `⬆ ${DEF_META[t.type].name} → ${upgrade.label}`);
+    setCtxMenu(null);
+    syncUI();
+  }, []);
+
+  // Repair building
+  const handleRepair = useCallback((building) => {
+    const g = gRef.current;
+    if (!g || g.waveActive) return;
+    const b = g.buildings.find(bl => bl.key === building.key);
+    if (!b || b.hp <= 0 || b.hp >= b.maxHp) return;
+    const repairAmount = b.maxHp - b.hp;
+    const cost = Math.round(repairAmount * REPAIR_COST_PER_HP);
+    if (g.money < cost) return;
+
+    b.hp = b.maxHp;
+    g.money -= cost;
+    addLog(g, `🔧 ${b.name} відремонтовано (-${cost}💰)`);
+    setCtxMenu(null);
+    syncUI();
+  }, []);
+
+  // Iskander scramble: click warning zone to move nearby towers away
+  const handleIskanderScramble = useCallback((pos) => {
+    const g = gRef.current;
+    if (!g || !g.iskanderWarn) return;
+    const iw = g.iskanderWarn;
+    if (dist(pos, { x: iw.x, y: iw.y }) > GRID * 2) return; // must click near warning
+
+    let moved = 0;
+    for (const t of g.towers) {
+      if (t.hp <= 0) continue;
+      if (dist(t, { x: iw.x, y: iw.y }) < GRID * 1.8) {
+        // Move tower one cell away from impact
+        const dx = t.x - iw.x;
+        const dy = t.y - iw.y;
+        const d = Math.sqrt(dx * dx + dy * dy) || 1;
+        const newX = t.x + Math.round(dx / d) * GRID;
+        const newY = t.y + Math.round(dy / d) * GRID;
+        // Clamp to grid
+        t.x = Math.max(GRID / 2, Math.min(g.city.width - GRID / 2, newX));
+        t.y = Math.max(GRID / 2, Math.min(g.city.height - GRID / 2, newY));
+        // Move kukurznik orbit center too
+        if (t.type === 'airfield') {
+          const k = g.kukurzniki.find(ku => ku.towerId === t.id);
+          if (k) { k.px = t.x; k.py = t.y; }
+        }
+        moved++;
+      }
+    }
+    if (moved > 0) {
+      addLog(g, `🏃 Евакуація! ${moved} позиц. переміщено`);
+      syncUI();
+    }
+  }, []);
+
+  // Enhanced click handler that also checks for Iskander scramble
+  const handleCanvasClick = useCallback((e) => {
+    if (phaseRef.current !== 'playing') return;
+    const g = gRef.current;
+    if (!g) return;
+    const pos = screenToCanvas(e, canvasRef.current, g.city.width, g.city.height);
+
+    // Check if clicking Iskander warning zone
+    if (g.iskanderWarn && dist(pos, { x: g.iskanderWarn.x, y: g.iskanderWarn.y }) < GRID * 2) {
+      handleIskanderScramble(pos);
+      return;
+    }
+
+    handleClick(e);
+  }, [handleClick, handleIskanderScramble]);
 
   // Game loop
   useEffect(() => {
@@ -131,20 +323,19 @@ export default function App() {
     const city = CITIES[cityId];
     const mode = MODES[difficulty];
 
-    // Apply city bonuses to mode
     const adjustedMode = { ...mode };
     if (city.bonuses?.turretAccuracy) {
       adjustedMode.turret = { ...mode.turret, hitChance: mode.turret.hitChance + city.bonuses.turretAccuracy };
     }
 
     gRef.current = createGameState(city, adjustedMode);
-    setUI(getUIState(gRef.current));
+    syncUI();
     setSelected('turret');
     setSpd(1);
+    setCtxMenu(null);
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
     let syncCounter = 0;
 
     function loop() {
@@ -160,11 +351,8 @@ export default function App() {
 
       draw(ctx, g, hoverRef.current, selectedRef.current);
 
-      // Sync React state at ~10fps instead of every frame
       syncCounter++;
-      if (syncCounter % 6 === 0) {
-        setUI(getUIState(g));
-      }
+      if (syncCounter % 6 === 0) setUI(getUIState(g));
 
       animRef.current = requestAnimationFrame(loop);
     }
@@ -174,16 +362,8 @@ export default function App() {
   }, [phase, cityId, difficulty]);
 
   // MENU
-  if (phase === 'menu') {
-    return <MainMenu onSelectCity={selectCity} />;
-  }
-
-  // DIFFICULTY SELECT
-  if (phase === 'difficulty') {
-    return <DifficultySelect cityId={cityId} onSelect={selectDifficulty} onBack={goMenu} />;
-  }
-
-  // RESULTS
+  if (phase === 'menu') return <MainMenu onSelectCity={selectCity} />;
+  if (phase === 'difficulty') return <DifficultySelect cityId={cityId} onSelect={selectDifficulty} onBack={goMenu} />;
   if (phase === 'won' || phase === 'lost') {
     return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} onMenu={goMenu} />;
   }
@@ -209,10 +389,12 @@ export default function App() {
             ref={canvasRef}
             width={city.width}
             height={city.height}
-            onClick={handleClick}
+            onClick={handleCanvasClick}
+            onContextMenu={handleRightClick}
             onMouseMove={handleMove}
             onMouseLeave={() => { hoverRef.current = null; }}
-            onTouchStart={handleTouch}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             className="rounded-lg"
             style={{
               border: '1px solid #1e293b',
@@ -237,7 +419,7 @@ export default function App() {
         />
       </div>
 
-      {/* Mobile battle log - shown below controls on small screens */}
+      {/* Mobile battle log */}
       <div className="md:hidden mt-1.5 w-full" style={{ maxWidth: city.width }}>
         <div className="flex gap-1 overflow-x-auto text-[9px] py-1 px-1" style={{ color: '#94a3b8' }}>
           {ui.logs.slice(0, 3).map((l, i) => (
@@ -245,6 +427,17 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {/* Context menu */}
+      <ContextMenu
+        target={ctxMenu}
+        money={ui.money}
+        waveActive={ui.waveActive}
+        onSell={handleSell}
+        onUpgrade={handleUpgrade}
+        onRepair={handleRepair}
+        onClose={() => setCtxMenu(null)}
+      />
     </div>
   );
 }

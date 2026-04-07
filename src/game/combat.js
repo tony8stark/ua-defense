@@ -36,7 +36,7 @@ export function updateCombat(g) {
         id: uid(), hitChance: tw.hitChance,
       });
     } else if (tw.type === 'crew') {
-      if (chance(m.crew.lossChance)) {
+      if (chance(tw.lossChanceOverride ?? m.crew.lossChance)) {
         addFloat(g, tw.x, tw.y - 20, '📡 ВТРАТА ЗВ\'ЯЗКУ', '#f87171');
         addLog(g, '📡 FPV втратив зв\'язок');
         g.friendlyDrones.push({
