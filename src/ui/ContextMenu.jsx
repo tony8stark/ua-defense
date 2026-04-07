@@ -1,4 +1,3 @@
-// Context menu for towers and buildings (sell, upgrade, repair)
 import { DEF_META, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from '../data/units.js';
 
 export default function ContextMenu({ target, money, waveActive, onSell, onUpgrade, onRepair, onClose }) {
@@ -8,37 +7,31 @@ export default function ContextMenu({ target, money, waveActive, onSell, onUpgra
   const isBuilding = target.type === 'building';
   const item = target.item;
 
+  // Clamp to viewport bounds
+  const menuW = 200, menuH = 200;
+  const x = Math.min(target.screenX, window.innerWidth - menuW / 2 - 8);
+  const y = Math.max(target.screenY, menuH + 16);
+
   return (
     <div
-      style={{
-        position: 'fixed',
-        left: target.screenX,
-        top: target.screenY,
-        zIndex: 100,
-        transform: 'translate(-50%, -100%)',
-        marginTop: -8,
-      }}
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 99 }}
     >
-      <div style={{
-        background: '#0c1222ee',
-        border: '1px solid #334155',
-        borderRadius: 8,
-        padding: '8px 10px',
-        minWidth: 160,
-        backdropFilter: 'blur(8px)',
-      }}>
-        {isTower && <TowerMenu item={item} money={money} waveActive={waveActive} onSell={onSell} onUpgrade={onUpgrade} />}
-        {isBuilding && <BuildingMenu item={item} money={money} waveActive={waveActive} onRepair={onRepair} />}
-        <button
-          onClick={onClose}
-          style={{
-            display: 'block', width: '100%', marginTop: 4,
-            padding: '4px 8px', fontSize: 9, color: '#64748b',
-            background: 'none', border: 'none', textAlign: 'center',
-          }}
-        >
-          Закрити
-        </button>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'fixed', left: x, top: y, zIndex: 100,
+          transform: 'translate(-50%, -100%)', marginTop: -8,
+        }}
+      >
+        <div style={{
+          background: '#0c1222ee', border: '1px solid #334155',
+          borderRadius: 10, padding: '12px 14px', minWidth: 200,
+          backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}>
+          {isTower && <TowerMenu item={item} money={money} waveActive={waveActive} onSell={onSell} onUpgrade={onUpgrade} />}
+          {isBuilding && <BuildingMenu item={item} money={money} waveActive={waveActive} onRepair={onRepair} />}
+        </div>
       </div>
     </div>
   );
@@ -47,26 +40,25 @@ export default function ContextMenu({ target, money, waveActive, onSell, onUpgra
 function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
   const meta = DEF_META[item.type];
   const level = item.level || 0;
-  const maxLevel = UPGRADES[item.type].length - 1;
+  const maxLevel = UPGRADES[item.type]?.length - 1 || 0;
   const canUpgrade = level < maxLevel;
   const upgradeCost = canUpgrade ? getUpgradeCost(item, item._mode) : null;
   const sellPrice = getSellPrice(item);
 
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: meta.color, marginBottom: 2 }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: meta.color, marginBottom: 2 }}>
         {meta.emoji} "{item.callsign || '???'}"
-        <span style={{ fontSize: 8, color: '#64748b', marginLeft: 4 }}>
-          {item.type !== 'decoy' ? `Рів.${level + 1}/${maxLevel + 1}` : ''}
-        </span>
       </div>
-      <div style={{ fontSize: 8, color: '#556678', marginBottom: 3 }}>{meta.name}</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>
+        {meta.name} {item.type !== 'decoy' ? `· Рів.${level + 1}/${maxLevel + 1}` : ''}
+      </div>
 
-      <div style={{ fontSize: 8, color: '#94a3b8', marginBottom: 6, lineHeight: 1.6 }}>
+      <div className="font-mono" style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 10, lineHeight: 1.6 }}>
         {item.type !== 'decoy' ? (
-          <>HP: {item.hp}/{item.maxHp} | 🎯{Math.round((item.hitChance || 0) * 100)}% | ⚡{item.damage} | 💀{item.kills || 0}</>
+          <>HP: {item.hp}/{item.maxHp} · 🎯{Math.round((item.hitChance || 0) * 100)}% · ⚡{item.damage} · 💀{item.kills || 0}</>
         ) : (
-          <>HP: {item.hp}/{item.maxHp} | 🪤 Хибна ціль для Ланцетів</>
+          <>HP: {item.hp}/{item.maxHp} · 🪤 Приманка</>
         )}
       </div>
 
@@ -76,18 +68,18 @@ function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
           disabled={money < upgradeCost || waveActive}
           style={{
             display: 'block', width: '100%',
-            padding: '5px 8px', fontSize: 9, fontWeight: 700,
+            padding: '8px 10px', fontSize: 13, fontWeight: 700,
             background: money >= upgradeCost && !waveActive ? '#4ade8020' : '#1e293b',
-            color: money >= upgradeCost && !waveActive ? '#4ade80' : '#475569',
+            color: money >= upgradeCost && !waveActive ? '#4ade80' : '#64748b',
             border: `1px solid ${money >= upgradeCost && !waveActive ? '#4ade8044' : '#1e293b'}`,
-            borderRadius: 4, marginBottom: 3,
+            borderRadius: 6, marginBottom: 4, minHeight: 44,
           }}
         >
           ⬆ Апгрейд — 💰{upgradeCost}
-          <div style={{ fontSize: 7, color: '#64748b', marginTop: 1 }}>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
             {UPGRADES[item.type][level + 1]?.desc}
           </div>
-          {waveActive && <div style={{ fontSize: 7, color: '#f59e0b' }}>Тільки між хвилями</div>}
+          {waveActive && <div style={{ fontSize: 11, color: '#f59e0b' }}>Тільки між хвилями</div>}
         </button>
       )}
 
@@ -95,9 +87,9 @@ function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
         onClick={() => onSell(item)}
         style={{
           display: 'block', width: '100%',
-          padding: '4px 8px', fontSize: 9, fontWeight: 700,
-          background: '#ef444415', color: '#ef4444',
-          border: '1px solid #ef444433', borderRadius: 4,
+          padding: '8px 10px', fontSize: 13, fontWeight: 700,
+          background: '#ef444418', color: '#ef4444',
+          border: '1px solid #ef444433', borderRadius: 6, minHeight: 44,
         }}
       >
         💰 Продати (+{sellPrice})
@@ -113,11 +105,10 @@ function BuildingMenu({ item, money, waveActive, onRepair }) {
 
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: item.hp > 0 ? '#4ade80' : '#ef4444', marginBottom: 4 }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: item.hp > 0 ? '#4ade80' : '#ef4444', marginBottom: 2 }}>
         {item.emoji} {item.name}
       </div>
-
-      <div style={{ fontSize: 8, color: '#94a3b8', marginBottom: 6 }}>
+      <div className="font-mono" style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 10 }}>
         HP: {item.hp}/{item.maxHp}
       </div>
 
@@ -127,24 +118,24 @@ function BuildingMenu({ item, money, waveActive, onRepair }) {
           disabled={money < repairCost || waveActive}
           style={{
             display: 'block', width: '100%',
-            padding: '5px 8px', fontSize: 9, fontWeight: 700,
+            padding: '8px 10px', fontSize: 13, fontWeight: 700,
             background: money >= repairCost && !waveActive ? '#4ade8020' : '#1e293b',
-            color: money >= repairCost && !waveActive ? '#4ade80' : '#475569',
+            color: money >= repairCost && !waveActive ? '#4ade80' : '#64748b',
             border: `1px solid ${money >= repairCost && !waveActive ? '#4ade8044' : '#1e293b'}`,
-            borderRadius: 4,
+            borderRadius: 6, minHeight: 44,
           }}
         >
           🔧 Ремонт — 💰{repairCost} (+{repairAmount} HP)
-          {waveActive && <div style={{ fontSize: 7, color: '#f59e0b', marginTop: 1 }}>Тільки між хвилями</div>}
+          {waveActive && <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>Тільки між хвилями</div>}
         </button>
       )}
 
       {item.hp <= 0 && (
-        <div style={{ fontSize: 8, color: '#7f1d1d' }}>Знищено. Ремонт неможливий.</div>
+        <div style={{ fontSize: 12, color: '#7f1d1d' }}>Знищено. Ремонт неможливий.</div>
       )}
 
       {!damaged && item.hp > 0 && (
-        <div style={{ fontSize: 8, color: '#4ade80' }}>Стан: повний</div>
+        <div style={{ fontSize: 12, color: '#4ade80' }}>Стан: повний</div>
       )}
     </div>
   );
