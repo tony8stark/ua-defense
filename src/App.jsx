@@ -389,10 +389,10 @@ export default function App() {
   return (
     <div style={{
       background: '#080e16', padding: '3px 3px env(safe-area-inset-bottom, 4px)',
-      minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
       {/* HUD */}
-      <div style={{ width: '100%', maxWidth: 1060, flexShrink: 0 }}>
+      <div style={{ width: '100%', flexShrink: 0 }}>
         <GameHUD
           money={ui.money} killed={ui.killed} score={ui.score}
           wave={ui.wave} waveActive={ui.waveActive} totalWaves={mode.waves.length}
@@ -401,9 +401,9 @@ export default function App() {
         />
       </div>
 
-      {/* Canvas area */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 3, width: '100%', maxWidth: 1060 }}>
-        <div ref={containerRef} style={{ flex: '1 1 0%', minWidth: 0, maxWidth: 880 }}>
+      {/* Canvas + sidebar */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 3, width: '100%', maxWidth: 1200 }}>
+        <div ref={containerRef} style={{ flex: '1 1 0%', minWidth: 0 }}>
           <canvas
             ref={canvasRef}
             width={city.width}
@@ -419,19 +419,20 @@ export default function App() {
               border: '1px solid #1e293b',
               cursor: 'crosshair',
               background: '#0c1222',
-              width: '100%',
               display: 'block',
+              width: '100%',
+              maxHeight: 'calc(100dvh - 110px)',
             }}
           />
         </div>
         {/* Sidebar log: desktop only */}
-        <div className="hidden lg:flex">
+        <div className="hidden lg:flex" style={{ flexShrink: 0 }}>
           <BattleLog logs={ui.logs} towers={ui.towers} />
         </div>
       </div>
 
       {/* Mobile log ticker */}
-      <div className="lg:hidden" style={{ width: '100%', maxWidth: 1060, flexShrink: 0, marginTop: 4 }}>
+      <div className="lg:hidden" style={{ width: '100%', flexShrink: 0, marginTop: 2 }}>
         <div style={{
           display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 4px',
           fontSize: 11, whiteSpace: 'nowrap', scrollbarWidth: 'none',
@@ -446,8 +447,8 @@ export default function App() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div style={{ width: '100%', maxWidth: 880, flexShrink: 0 }}>
+      {/* Controls - capped to reasonable width */}
+      <div style={{ width: '100%', maxWidth: 1200, flexShrink: 0 }}>
         <BottomBar
           mode={mode} selected={selected} onSelect={setSelected}
           counts={ui.counts} waveActive={ui.waveActive} wave={ui.wave}

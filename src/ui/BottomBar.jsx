@@ -60,7 +60,6 @@ export default function BottomBar({ mode, selected, onSelect, counts, waveActive
             textTransform: 'uppercase',
             letterSpacing: 1,
             flex: '1 1 0%',
-            maxWidth: 400,
           }}
         >
           {waveActive ? '⏳ Атака...' : wave >= totalWaves ? '✅ Перемога' : '🚀 Хвиля!'}
