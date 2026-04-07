@@ -126,7 +126,7 @@ export function trySpawnEW(g) {
   // 15% chance per wave
   if (Math.random() > 0.15) return;
 
-  g.ewActive = { timer: rnd(140, 200), maxTimer: 200 };
+  g.ewActive = { timer: rnd(250, 400), maxTimer: 400 };
   g.ewCooldown = 2;
   addLog(g, '📡 РЕБ АКТИВНИЙ! Зв\'язок порушено!');
   playEWBuzz();
@@ -143,30 +143,52 @@ export function updateEW(g) {
 
 export function drawEWOverlay(ctx, g) {
   if (!g.ewActive) return;
-  const a = Math.sin(g.tick * 0.15) * 0.03 + 0.05;
+  const W = g.city.width, H = g.city.height;
+  const pulse = Math.sin(g.tick * 0.08) * 0.5 + 0.5;
 
-  // Static noise
   ctx.save();
-  ctx.globalAlpha = a;
-  for (let i = 0; i < 40; i++) {
-    const x = Math.random() * g.city.width;
-    const y = Math.random() * g.city.height;
+
+  // Full-screen orange tint
+  ctx.fillStyle = `rgba(245,158,11,${0.04 + pulse * 0.04})`;
+  ctx.fillRect(0, 0, W, H);
+
+  // Scanlines
+  ctx.strokeStyle = `rgba(245,158,11,${0.06 + pulse * 0.04})`;
+  ctx.lineWidth = 1;
+  const offset = g.tick % 8;
+  for (let y = offset; y < H; y += 4) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Static noise particles
+  ctx.globalAlpha = 0.12 + pulse * 0.08;
+  for (let i = 0; i < 80; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
     ctx.fillStyle = Math.random() > 0.5 ? '#f59e0b' : '#fff';
-    ctx.fillRect(x, y, rnd(1, 4), rnd(1, 2));
+    ctx.fillRect(x, y, rnd(1, 5), rnd(1, 3));
   }
   ctx.globalAlpha = 1;
 
-  // Border warning
-  const flash = Math.sin(g.tick * 0.2) > 0;
-  ctx.strokeStyle = flash ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.08)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(2, 2, g.city.width - 4, g.city.height - 4);
+  // Bold border
+  const flash = Math.sin(g.tick * 0.15) > 0;
+  ctx.strokeStyle = flash ? 'rgba(245,158,11,0.5)' : 'rgba(245,158,11,0.15)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, W - 4, H - 4);
 
-  // Label
-  ctx.font = "bold 11px 'Courier New'";
+  // Large centered label
+  ctx.font = "bold 16px 'Courier New'";
   ctx.textAlign = 'center';
-  ctx.fillStyle = flash ? '#f59e0b' : '#f59e0b88';
-  ctx.fillText('⚡ РЕБ АКТИВНИЙ', g.city.width / 2, 18);
+  ctx.fillStyle = flash ? '#f59e0b' : '#f59e0baa';
+  ctx.fillText('⚡ РЕБ АКТИВНИЙ ⚡', W / 2, 24);
+
+  // Timer bar
+  const progress = g.ewActive.timer / g.ewActive.maxTimer;
+  ctx.fillStyle = '#f59e0b33';
+  ctx.fillRect(W / 2 - 60, 30, 120, 4);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillRect(W / 2 - 60, 30, 120 * progress, 4);
+
   ctx.restore();
 }
 

@@ -80,7 +80,7 @@ export function update(g) {
 
     // Guided drones zigzag
     if (en.type === 'guided') {
-      const zigzag = Math.sin(g.tick * 0.15 + en.id) * 0.8;
+      const zigzag = Math.sin(g.tick * 0.12 + en.id * 3) * 1.5;
       driftX += Math.cos(a + Math.PI / 2) * zigzag;
       driftY += Math.sin(a + Math.PI / 2) * zigzag;
     }

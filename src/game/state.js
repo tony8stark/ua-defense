@@ -66,9 +66,10 @@ export function getUIState(g) {
     weather: g.weather,
     ewActive: !!g.ewActive,
     f16Active: !!g.f16,
+    towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
   };
 }
 
 export function addLog(g, msg) {
-  g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 8);
+  g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 20);
 }

@@ -15,7 +15,7 @@ export const MODES = {
     geran: { hp: 50, speed: 1.0, dmg: 25, reward: 14, targetDef: 0.10 },
     lancet: { hp: 30, speed: 1.6, dmg: 45, reward: 22, targetDef: 0.20 },
     shahed238: { hp: 50, speed: 2.0, dmg: 50, reward: 28, targetDef: 0 },
-    guided: { hp: 90, speed: 0.55, dmg: 50, reward: 25, targetDef: 0.90, dodgeChance: 0.15 },
+    guided: { hp: 140, speed: 0.85, dmg: 50, reward: 25, targetDef: 0.90, dodgeChance: 0.30 },
     iskander: { interval: [1400, 2000], warnTicks: 100, dmg: 999, splashPct: 0.5 },
     waves: [
       { en: [{ t: 'shahed', n: 4 }], d: 60 },
@@ -43,7 +43,7 @@ export const MODES = {
     shahed238: { hp: 80, speed: 2.4, dmg: 55, reward: 30, targetDef: 0.08 },
     geran: { hp: 90, speed: 1.2, dmg: 35, reward: 16, targetDef: 0.20 },
     lancet: { hp: 40, speed: 1.9, dmg: 60, reward: 24, targetDef: 0.38 },
-    guided: { hp: 160, speed: 0.5, dmg: 60, reward: 30, targetDef: 0.95, dodgeChance: 0.20 },
+    guided: { hp: 250, speed: 0.75, dmg: 60, reward: 30, targetDef: 0.95, dodgeChance: 0.35 },
     iskander: { interval: [800, 1300], warnTicks: 90, dmg: 999, splashPct: 0.5 },
     waves: [
       { en: [{ t: 'shahed', n: 5 }], d: 55 },
@@ -73,7 +73,7 @@ export const MODES = {
     shahed238: { hp: 100, speed: 2.8, dmg: 65, reward: 34, targetDef: 0.15 },
     geran: { hp: 120, speed: 1.4, dmg: 45, reward: 18, targetDef: 0.32 },
     lancet: { hp: 55, speed: 2.1, dmg: 75, reward: 28, targetDef: 0.55 },
-    guided: { hp: 220, speed: 0.45, dmg: 80, reward: 35, targetDef: 0.98, dodgeChance: 0.25 },
+    guided: { hp: 350, speed: 0.70, dmg: 80, reward: 35, targetDef: 0.98, dodgeChance: 0.40 },
     iskander: { interval: [500, 900], warnTicks: 75, dmg: 999, splashPct: 0.5 },
     waves: [
       { en: [{ t: 'shahed', n: 3 }, { t: 'geran', n: 1 }], d: 55 },

@@ -421,7 +421,7 @@ export default function App() {
         </div>
         {/* Sidebar log: desktop only */}
         <div className="hidden lg:flex">
-          <BattleLog logs={ui.logs} />
+          <BattleLog logs={ui.logs} towers={ui.towers} />
         </div>
       </div>
 
