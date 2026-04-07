@@ -3,7 +3,7 @@ import { CITIES, GRID } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
-import { createGameState, getUIState, addLog } from './game/state.js';
+import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster } from './game/state.js';
 import { getCallsign } from './data/callsigns.js';
 import { playPlace, playSell, playGameOver, playWaveComplete, resumeOnInteraction } from './audio/SoundManager.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
@@ -118,6 +118,7 @@ export default function App() {
 
     const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0, callsign: getCallsign(), kills: 0 };
     g.towers.push(tower);
+    registerUnit(g, tower);
 
     if (sel === 'airfield') {
       g.kukurzniki.push({
@@ -198,6 +199,7 @@ export default function App() {
     if (!t || t.hp <= 0) return;
     const price = getSellPrice(t);
     t.hp = 0;
+    markUnitSold(g, t.id);
     if (t.type === 'airfield') {
       g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== t.id);
     }
@@ -375,7 +377,8 @@ export default function App() {
     // Find MVP tower (most kills)
     const g = gRef.current;
     const mvp = g?.towers?.filter(t => (t.kills || 0) > 0).sort((a, b) => (b.kills || 0) - (a.kills || 0))[0] || null;
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} mvp={mvp} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
+    const roster = gRef.current ? getFinalRoster(gRef.current) : [];
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
   // PLAYING

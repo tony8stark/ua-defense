@@ -2,7 +2,7 @@
 import { TICK, dist, rnd } from './physics.js';
 import { GRID } from '../data/cities.js';
 import { DEF_META } from '../data/units.js';
-import { addLog } from './state.js';
+import { addLog, markUnitDestroyed } from './state.js';
 import { playSiren, playExplosion } from '../audio/SoundManager.js';
 
 export function updateIskander(g) {
@@ -46,11 +46,13 @@ function impact(g, m) {
       if (tw.type === 'airfield') {
         g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
       }
+      markUnitDestroyed(g, tw.id);
       addLog(g, `🚀 ІСКАНДЕР знищив ${DEF_META[tw.type].name}!`);
     } else if (d < GRID * 1.6) {
       tw.hp = Math.max(0, tw.hp - Math.round(tw.maxHp * m.iskander.splashPct));
-      if (tw.hp <= 0 && tw.type === 'airfield') {
-        g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
+      if (tw.hp <= 0) {
+        markUnitDestroyed(g, tw.id);
+        if (tw.type === 'airfield') g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
       }
     }
   }

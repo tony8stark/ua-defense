@@ -37,6 +37,8 @@ export function createGameState(city, mode) {
     iskanderTimer: rnd(mode.iskander.interval[0], mode.iskander.interval[1]),
     iskanderWarn: null,
     logs: [],
+    // Unit roster: tracks ALL units ever placed (for end-game summary)
+    unitRoster: [],
     // Events
     f16: null,
     f16Cooldown: 0,
@@ -68,6 +70,44 @@ export function getUIState(g) {
     f16Active: !!g.f16,
     towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
   };
+}
+
+// Register a new tower in the roster
+export function registerUnit(g, tower) {
+  g.unitRoster.push({
+    id: tower.id,
+    type: tower.type,
+    callsign: tower.callsign,
+    kills: 0,
+    alive: true,
+    soldByPlayer: false,
+  });
+}
+
+// Mark a unit as destroyed in roster
+export function markUnitDestroyed(g, towerId) {
+  const entry = g.unitRoster.find(u => u.id === towerId);
+  if (entry) entry.alive = false;
+}
+
+// Mark a unit as sold in roster
+export function markUnitSold(g, towerId) {
+  const entry = g.unitRoster.find(u => u.id === towerId);
+  if (entry) { entry.alive = false; entry.soldByPlayer = true; }
+}
+
+// Sync kills from live towers into roster
+export function syncRosterKills(g) {
+  for (const t of g.towers) {
+    const entry = g.unitRoster.find(u => u.id === t.id);
+    if (entry) entry.kills = t.kills || 0;
+  }
+}
+
+// Get final roster for results screen
+export function getFinalRoster(g) {
+  syncRosterKills(g);
+  return g.unitRoster.map(u => ({ ...u }));
 }
 
 export function addLog(g, msg) {

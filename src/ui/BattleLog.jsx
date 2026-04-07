@@ -10,7 +10,6 @@ export default function BattleLog({ logs, towers }) {
     return '#cbd5e1';
   }
 
-  // Top 3 towers by kills
   const topUnits = (towers || [])
     .filter(t => t.hp > 0 && (t.kills || 0) > 0)
     .sort((a, b) => (b.kills || 0) - (a.kills || 0))
@@ -21,10 +20,32 @@ export default function BattleLog({ logs, towers }) {
       width: 160, fontSize: 10, borderRadius: 6, padding: 8,
       background: '#111a2b', border: '1px solid #243447', color: '#c8d6e5',
       display: 'flex', flexDirection: 'column', flexShrink: 0,
+      height: '100%', // match canvas height
+      maxHeight: 'calc(100dvh - 90px)',
       overflow: 'hidden',
     }}>
-      {/* Battle log */}
-      <div style={{ fontWeight: 700, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: '#94a3b8', marginBottom: 4 }}>
+      {/* Top units - fixed height section at top */}
+      {topUnits.length > 0 && (
+        <div style={{ flexShrink: 0, paddingBottom: 6, marginBottom: 6, borderBottom: '1px solid #243447' }}>
+          <div style={{ fontWeight: 700, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: '#94a3b8', marginBottom: 4 }}>
+            Найкращі
+          </div>
+          {topUnits.map((t, i) => {
+            const meta = DEF_META[t.type];
+            return (
+              <div key={t.id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 2, fontSize: 9 }}>
+                <span style={{ color: i === 0 ? '#fbbf24' : '#64748b' }}>{i + 1}.</span>
+                <span style={{ color: meta?.color || '#94a3b8' }}>{meta?.emoji}</span>
+                <span style={{ color: '#cbd5e1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.callsign || '???'}</span>
+                <span style={{ color: '#fbbf24', fontWeight: 700 }}>💀{t.kills}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Battle log - scrollable, takes remaining space */}
+      <div style={{ fontWeight: 700, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: '#94a3b8', marginBottom: 4, flexShrink: 0 }}>
         Бойовий журнал
       </div>
       <div style={{ flex: '1 1 0%', overflowY: 'auto', minHeight: 0, scrollbarWidth: 'thin' }}>
@@ -40,26 +61,6 @@ export default function BattleLog({ logs, towers }) {
         ))}
         {logs.length === 0 && <div style={{ color: '#64748b' }}>Очікування...</div>}
       </div>
-
-      {/* Top units */}
-      {topUnits.length > 0 && (
-        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #243447' }}>
-          <div style={{ fontWeight: 700, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: '#94a3b8', marginBottom: 4 }}>
-            Найкращі
-          </div>
-          {topUnits.map((t, i) => {
-            const meta = DEF_META[t.type];
-            return (
-              <div key={t.id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 2, fontSize: 9 }}>
-                <span style={{ color: i === 0 ? '#fbbf24' : '#64748b' }}>{i + 1}.</span>
-                <span style={{ color: meta?.color || '#94a3b8' }}>{meta?.emoji}</span>
-                <span style={{ color: '#cbd5e1', flex: 1 }}>{t.callsign || '???'}</span>
-                <span style={{ color: '#fbbf24', fontWeight: 700 }}>💀{t.kills}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

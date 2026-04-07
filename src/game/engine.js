@@ -5,7 +5,7 @@ import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
-import { addLog } from './state.js';
+import { addLog, markUnitDestroyed } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
 
 // Start a wave
@@ -96,6 +96,7 @@ export function update(g) {
         const name = to.callsign ? `"${to.callsign}" (${DEF_META[to.type]?.name})` : DEF_META[to.type]?.name || 'Позицію';
         if (to.hp <= 0) {
           addLog(g, `⚠️ ${name} знищено!`);
+          markUnitDestroyed(g, to.id);
           if (to.type === 'airfield') g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== to.id);
         }
       } else if (en.target.mode === 'building') {
