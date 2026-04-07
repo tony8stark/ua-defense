@@ -74,11 +74,13 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         <div style={{
           width: '100%', maxWidth: 460, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 8, padding: '12px 14px',
+          maxHeight: '45dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, flexShrink: 0 }}>
             Особовий склад ({totalUnits} розміщено · {destroyedUnits} знищено{soldUnits > 0 ? ` · ${soldUnits} продано` : ''})
           </div>
 
+          <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0 }}>
           {sortedRoster.map((u, i) => {
             const meta = DEF_META[u.type];
             const isMVP = mvp && u.id === mvp.id;
@@ -117,6 +119,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
               </div>
             );
           })}
+          </div>
         </div>
       )}
 
