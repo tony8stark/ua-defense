@@ -169,8 +169,12 @@ export function updateCombat(g) {
       fd.dead = true;
       const dodged = tgt.dodgeChance && chance(tgt.dodgeChance);
       if (!dodged && chance(fd.hitChance || 0.5)) {
-        tgt.hp -= fd.damage;
-        g.explosions.push({ x: fd.x, y: fd.y, r: 16, life: 18, ml: 18 });
+        // 7% crit chance: direct hit to critical systems, instant kill
+        const isCrit = chance(0.07);
+        const dmg = isCrit ? tgt.hp + 1 : fd.damage;
+        tgt.hp -= dmg;
+        if (isCrit) addFloat(g, fd.x, fd.y - 14, 'КРИТ!', '#fbbf24');
+        g.explosions.push({ x: fd.x, y: fd.y, r: isCrit ? 24 : 16, life: isCrit ? 24 : 18, ml: isCrit ? 24 : 18 });
         if (tgt.hp <= 0) {
           g.money += tgt.reward;
           g.score += tgt.reward;

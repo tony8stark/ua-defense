@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { CITIES, GRID } from './data/cities.js';
+import { CITIES, GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
@@ -105,6 +105,8 @@ export default function App() {
     const cost = getCost(def.baseCost, m.costEsc, existing);
     if (g.money < cost) return;
     if (pos.x < zone.left || pos.x > zone.right) return;
+    if (zone.top && pos.y < zone.top) return;
+    if (zone.bottom && pos.y > zone.bottom) return;
 
     const gx = Math.floor(pos.x / GRID) * GRID + GRID / 2;
     const gy = Math.floor(pos.y / GRID) * GRID + GRID / 2;
@@ -156,7 +158,9 @@ export default function App() {
     if (!g) return;
     const zone = g.city.placeZone;
     const pos = screenToCanvas(e, canvasRef.current, g.city.width, g.city.height);
-    hoverRef.current = (pos.x >= zone.left && pos.x <= zone.right)
+    const inZone = pos.x >= zone.left && pos.x <= zone.right
+      && (!zone.top || pos.y >= zone.top) && (!zone.bottom || pos.y <= zone.bottom);
+    hoverRef.current = inZone
       ? { x: Math.floor(pos.x / GRID) * GRID + GRID / 2, y: Math.floor(pos.y / GRID) * GRID + GRID / 2 }
       : null;
   }, []);
@@ -328,7 +332,7 @@ export default function App() {
       return;
     }
 
-    const city = CITIES[cityId];
+    const city = getCityConfig(cityId);
     const mode = MODES[difficulty];
 
     const adjustedMode = { ...mode };
@@ -382,7 +386,7 @@ export default function App() {
   }
 
   // PLAYING
-  const city = CITIES[cityId];
+  const city = getCityConfig(cityId);
   const mode = MODES[difficulty];
   if (!city || !mode) return null;
 

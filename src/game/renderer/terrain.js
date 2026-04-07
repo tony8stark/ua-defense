@@ -6,7 +6,9 @@ export function drawTerrain(ctx, g) {
   const W = city.width, H = city.height;
   const t = g.tick * 0.02;
 
-  if (city.terrain === 'coastal') {
+  if (city.terrain === 'coastal-portrait') {
+    drawCoastalPortrait(ctx, W, H, city.landY || 200, city.placeZone, t);
+  } else if (city.terrain === 'coastal') {
     drawCoastalTerrain(ctx, W, H, city.landX, city.placeZone, t);
   } else if (city.terrain === 'urban') {
     drawUrbanTerrain(ctx, W, H, city.placeZone, t);
@@ -174,6 +176,69 @@ function drawUrbanTerrain(ctx, W, H, zone, t) {
 
   // Placement grid
   drawGrid(ctx, zone.left, zone.right, H);
+}
+
+// Portrait coastal: sea on top, land below
+function drawCoastalPortrait(ctx, W, H, landY, zone, t) {
+  // Sea (top band)
+  const sg = ctx.createLinearGradient(0, 0, 0, landY);
+  sg.addColorStop(0, '#0a1628');
+  sg.addColorStop(0.5, '#0c3350');
+  sg.addColorStop(1, '#0f2b3d');
+  ctx.fillStyle = sg;
+  ctx.fillRect(0, 0, W, landY);
+
+  // Sea waves
+  ctx.strokeStyle = 'rgba(56,189,248,0.06)';
+  ctx.lineWidth = 1;
+  for (let col = 0; col < W; col += 28) {
+    ctx.beginPath();
+    for (let y = 0; y < landY; y += 4) {
+      const x = col + Math.sin((y + t * 30) * 0.03) * 5;
+      y === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Land (below)
+  const lg = ctx.createLinearGradient(0, landY, 0, H);
+  lg.addColorStop(0, '#0f1a14');
+  lg.addColorStop(0.2, '#142018');
+  lg.addColorStop(1, '#1a2a1a');
+  ctx.fillStyle = lg;
+  ctx.fillRect(0, landY, W, H - landY);
+
+  // Shoreline (horizontal)
+  ctx.strokeStyle = '#2d5a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = 0; x < W; x += 2) {
+    const y = landY + Math.sin(x * 0.02 + t) * 6;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Shore glow
+  ctx.strokeStyle = 'rgba(56,189,248,0.08)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  for (let x = 0; x < W; x += 2) {
+    const y = landY + Math.sin(x * 0.02 + t + 1) * 8 - 5;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Grid on land area
+  const top = zone.top || landY + 10;
+  const bottom = zone.bottom || H;
+  ctx.strokeStyle = 'rgba(74,222,128,0.035)';
+  ctx.lineWidth = 0.5;
+  for (let x = zone.left; x <= zone.right; x += GRID) {
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+  }
+  for (let y = top; y <= bottom; y += GRID) {
+    ctx.beginPath(); ctx.moveTo(zone.left, y); ctx.lineTo(zone.right, y); ctx.stroke();
+  }
 }
 
 function drawGrid(ctx, left, right, H) {
