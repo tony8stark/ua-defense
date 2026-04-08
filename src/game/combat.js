@@ -30,6 +30,8 @@ export function updateCombat(g) {
     let closest = null, closestDist = Infinity;
     const effectiveRange = tw.range * (weather.rangeMul || 1);
     for (const en of g.enemies) {
+      // Stealth enemies can't be targeted
+      if (en.stealth) continue;
       // Crew skips Shahed-238
       if (tw.type === 'crew' && en.type === 'shahed238') continue;
       // HAWK only targets slow enemies (Shahed, Geran, Kalibr, Orlan, Kh-101)
@@ -123,6 +125,7 @@ export function updateCombat(g) {
     let closest = null, closestDist = Infinity;
     const kRange = k.range * (weather.rangeMul || 1);
     for (const en of g.enemies) {
+      if (en.stealth) continue;
       if (en.type === 'shahed238') continue;
       const d = dist(k, en);
       if (d < kRange && d < closestDist) { closest = en; closestDist = d; }
@@ -202,6 +205,7 @@ export function updateCombat(g) {
     if (!tgt) {
       let cl = null, cd = Infinity;
       for (const en of g.enemies) {
+        if (en.stealth) continue;
         if (en.type === 'shahed238') continue;
         const d = dist(fd, en);
         if (d < cd) { cl = en; cd = d; }

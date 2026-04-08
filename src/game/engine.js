@@ -41,9 +41,12 @@ export function startWave(g) {
 
   addLog(g, getWaveStartQuip());
 
-  // Try spawn events at wave start
+  // Track wave size for mid-wave events
+  g._waveSize = g.spawnQueue.length;
+  g._ewRolled = false;
+
+  // Try spawn events at wave start (EW triggers mid-wave now, not here)
   trySpawnF16(g);
-  trySpawnEW(g);
   trySpawnOrlan(g);
   trySpawnKh101(g);
 
@@ -95,6 +98,23 @@ export function update(g) {
     }
     playWaveComplete();
     if (g.wave >= g.mode.waves.length) return 'won';
+  }
+
+  // Reveal stealth enemies near towers (detection range ~120px)
+  const STEALTH_DETECT = 120;
+  for (const en of g.enemies) {
+    if (en.stealth) {
+      for (const tw of g.towers) {
+        if (tw.hp <= 0) continue;
+        if (dist(en, tw) < STEALTH_DETECT) {
+          en.stealth = false;
+          addLog(g, '⚠️ Низьколітна ціль виявлена!');
+          // Visual pop effect
+          g.floats.push({ x: en.x, y: en.y - 16, text: '👁️ ВИЯВЛЕНО', color: '#fbbf24', life: 50, ml: 50 });
+          break;
+        }
+      }
+    }
   }
 
   // Move enemies toward targets
@@ -179,6 +199,9 @@ export function update(g) {
   updateCombat(g);
   updateCombo(g);
   updateTrivoga(g);
+
+  // Mid-wave EW check
+  trySpawnEW(g);
   g.enemies = g.enemies.filter(e => e.hp > 0);
 
   // Iskander

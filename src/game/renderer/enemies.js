@@ -1,6 +1,17 @@
 // Enemy drone rendering
 export function drawEnemies(ctx, g) {
   for (const en of g.enemies) {
+    // Stealth enemies: almost invisible (faint shimmer only)
+    if (en.stealth) {
+      const shimmer = Math.sin(g.tick * 0.2 + en.id * 5) * 0.5 + 0.5;
+      ctx.globalAlpha = shimmer * 0.08;
+      ctx.fillStyle = en.color;
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, en.sz * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      continue;
+    }
     // Target line for tower-hunting enemies
     if (en.target?.mode === 'tower') {
       const tw = g.towers.find(t => t.id === en.target.id && t.hp > 0);

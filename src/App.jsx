@@ -19,6 +19,7 @@ import BattleLog from './ui/BattleLog.jsx';
 import BottomBar from './ui/BottomBar.jsx';
 import ContextMenu from './ui/ContextMenu.jsx';
 import Leaderboard from './ui/Leaderboard.jsx';
+import TechPage from './ui/TechPage.jsx';
 
 export default function App() {
   const [phase, setPhase] = useState('menu');
@@ -386,8 +387,9 @@ export default function App() {
   }, [phase, cityId, difficulty]);
 
   // MENU
-  if (phase === 'menu') return <MainMenu onSelectCity={selectCity} onShowLeaderboard={() => setPhase('leaderboard')} />;
+  if (phase === 'menu') return <MainMenu onSelectCity={selectCity} onShowLeaderboard={() => setPhase('leaderboard')} onShowTech={() => setPhase('tech')} />;
   if (phase === 'leaderboard') return <Leaderboard onBack={goMenu} />;
+  if (phase === 'tech') return <TechPage onBack={goMenu} />;
   if (phase === 'difficulty') return <DifficultySelect cityId={cityId} onSelect={selectDifficulty} onBack={goMenu} />;
   if (phase === 'won' || phase === 'lost') {
     // Find MVP tower (most kills)

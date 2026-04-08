@@ -1,6 +1,6 @@
 import { CITIES } from '../data/cities.js';
 
-export default function MainMenu({ onSelectCity, onShowLeaderboard }) {
+export default function MainMenu({ onSelectCity, onShowLeaderboard, onShowTech }) {
   return (
     <div style={{
       minHeight: '100dvh', display: 'flex', alignItems: 'safe center', justifyContent: 'center',
@@ -91,17 +91,30 @@ export default function MainMenu({ onSelectCity, onShowLeaderboard }) {
           </div>
         </div>
 
-        <button
-          onClick={onShowLeaderboard}
-          style={{
-            marginTop: 24, padding: '12px 28px', borderRadius: 8,
-            fontSize: 14, fontWeight: 700, background: '#1e293b',
-            color: '#fbbf24', border: '1px solid #fbbf2433',
-            minHeight: 44,
-          }}
-        >
-          🏆 Таблиця рекордів
-        </button>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 24 }}>
+          <button
+            onClick={onShowTech}
+            style={{
+              padding: '12px 28px', borderRadius: 8,
+              fontSize: 14, fontWeight: 700, background: '#1e293b',
+              color: '#e2e8f0', border: '1px solid #334155',
+              minHeight: 44,
+            }}
+          >
+            📖 Техніка
+          </button>
+          <button
+            onClick={onShowLeaderboard}
+            style={{
+              padding: '12px 28px', borderRadius: 8,
+              fontSize: 14, fontWeight: 700, background: '#1e293b',
+              color: '#fbbf24', border: '1px solid #fbbf2433',
+              minHeight: 44,
+            }}
+          >
+            🏆 Рейтинг
+          </button>
+        </div>
       </div>
     </div>
   );

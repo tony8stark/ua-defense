@@ -52,6 +52,11 @@ export function spawnEnemy(g, type) {
   const edge = pickSpawnEdge(g.city);
   const pos = getSpawnPos(g.city, edge);
 
+  // Stealth: some Shaheds and Gerans fly low (invisible until near towers)
+  const canStealth = (type === 'shahed' || type === 'geran');
+  const stealthChance = type === 'shahed' ? 0.20 : 0.15;
+  const isStealth = canStealth && chance(stealthChance) && g.wave >= 3;
+
   g.enemies.push({
     x: pos.x,
     y: pos.y,
@@ -67,6 +72,7 @@ export function spawnEnemy(g, type) {
     id: uid(),
     angle: Math.PI,
     dodgeChance: et.dodgeChance || 0,
+    stealth: isStealth,
   });
 
   // Apply Orlan recon wave buff (if any)

@@ -123,13 +123,26 @@ export function drawF16(ctx, g) {
 
 // ====== EW JAMMING ======
 
+// EW now triggers mid-wave (called from engine update, not wave start)
 export function trySpawnEW(g) {
   if (g.ewActive || g.ewCooldown > 0) return;
   if (g.wave < 2) return;
-  // 15% chance per wave
-  if (Math.random() > 0.15) return;
+  if (!g.waveActive) return;
 
-  g.ewActive = { timer: rnd(400, 650), maxTimer: 650 };
+  // Only trigger when 30-60% of enemies have spawned (mid-wave pressure)
+  if (!g._ewRolled) {
+    const totalInWave = g._waveSize || 1;
+    const spawned = totalInWave - g.spawnQueue.length;
+    const spawnPct = spawned / totalInWave;
+    if (spawnPct < 0.30 || spawnPct > 0.60) return;
+    g._ewRolled = true; // only roll once per wave
+    // 20% chance
+    if (Math.random() > 0.20) return;
+  } else {
+    return;
+  }
+
+  g.ewActive = { timer: rnd(600, 950), maxTimer: 950 };
   g.ewCooldown = 2;
   addLog(g, `📡 ${getEWQuip('start')}`);
   playEWBuzz();
