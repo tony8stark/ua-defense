@@ -10,6 +10,8 @@ const ENEMY_META = {
   lancet: { name: 'Lancet-3', emoji: '🎯', color: '#f87171' },
   guided: { name: 'Керований', emoji: '👁️', color: '#ff6b6b' },
   orlan: { name: 'Орлан-10', emoji: '🔭', color: '#6ee7b7' },
+  kalibr: { name: 'Калібр', emoji: '🚢', color: '#38bdf8' },
+  kh101: { name: 'Кх-101', emoji: '✈️', color: '#c084fc' },
 };
 
 export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, patriotInterceptions, bestCombo, onMenu, onLeaderboard }) {

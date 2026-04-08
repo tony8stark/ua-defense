@@ -3,7 +3,7 @@ import { TICK, dist, ang, rnd, chance, updateTick } from './physics.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
-import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, rollWeather } from './events.js';
+import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed, updateCombo } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
@@ -40,6 +40,7 @@ export function startWave(g) {
   trySpawnF16(g);
   trySpawnEW(g);
   trySpawnOrlan(g);
+  trySpawnKh101(g);
 
   return true;
 }

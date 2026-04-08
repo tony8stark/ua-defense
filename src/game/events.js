@@ -204,6 +204,55 @@ export function getEWMultipliers(g) {
   };
 }
 
+// ====== Kh-101 AIR LAUNCH ======
+
+export function trySpawnKh101(g) {
+  if (g.wave < 5) return;
+  const cfg = g.mode.kh101;
+  if (!cfg) return;
+  if (Math.random() > cfg.spawnChance) return;
+  // Don't overlap with F-16 (both are flyby events)
+  if (g.f16) return;
+
+  const W = g.city.width, H = g.city.height;
+  const count = rnd(cfg.count[0], cfg.count[1] + 1) | 0;
+
+  addLog(g, '⚠️ Ту-95МС в повітрі! Пуск крилатих ракет!');
+
+  // Spawn Kh-101s from one edge with slight delay
+  const spawnY = rnd(H * 0.1, H * 0.4);
+  for (let i = 0; i < count; i++) {
+    const target = pickKh101Target(g);
+    if (!target) continue;
+
+    g.enemies.push({
+      x: W + 30 + i * 25, // staggered from right edge
+      y: spawnY + rnd(-30, 30),
+      hp: cfg.hp, maxHp: cfg.hp,
+      speed: cfg.speed,
+      dmg: cfg.dmg,
+      reward: cfg.reward,
+      color: ENEMY_COLORS.kh101,
+      sz: ENEMY_SIZES.kh101,
+      type: 'kh101',
+      target,
+      id: uid(),
+      angle: Math.PI,
+      dodgeChance: 0,
+    });
+
+    g.totalSpawned++;
+    g.spawnedByType.kh101++;
+  }
+}
+
+function pickKh101Target(g) {
+  const alive = g.buildings.filter(b => b.hp > 0);
+  return alive.length
+    ? { mode: 'building', key: alive[Math.floor(Math.random() * alive.length)].key }
+    : null;
+}
+
 // ====== ORLAN-10 RECON ======
 
 export function trySpawnOrlan(g) {

@@ -6,6 +6,8 @@ export const ENEMY_COLORS = {
   lancet: '#f87171',
   guided: '#ff6b6b', // operator-guided, red with pulsing eye
   orlan: '#6ee7b7',  // recon drone, green tint
+  kalibr: '#38bdf8', // cruise missile, blue
+  kh101: '#c084fc',  // air-launched cruise missile, purple
 };
 
 export const ENEMY_SIZES = {
@@ -15,4 +17,6 @@ export const ENEMY_SIZES = {
   lancet: 9,
   guided: 15, // slightly larger, menacing
   orlan: 10,  // small recon UAV
+  kalibr: 16, // large cruise missile
+  kh101: 15,  // air-launched cruise missile
 };

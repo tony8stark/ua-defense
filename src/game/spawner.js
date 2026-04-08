@@ -41,7 +41,11 @@ function pickTarget(g, enemyType) {
 
 // Spawn a single enemy
 export function spawnEnemy(g, type) {
+  // Kalibr only spawns on Odesa (sea-based cruise missile)
+  if (type === 'kalibr' && g.city.id !== 'odesa') return;
+
   const et = g.mode[type];
+  if (!et) return; // guard: enemy type not defined for this difficulty
   const target = pickTarget(g, type);
   if (!target) return;
 

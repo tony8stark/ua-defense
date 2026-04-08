@@ -85,6 +85,40 @@ export function drawEnemies(ctx, g) {
       }
     }
 
+    if (en.type === 'kalibr') {
+      // Blue engine glow trail
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(
+        en.x - Math.cos(en.angle) * en.sz * 0.7,
+        en.y - Math.sin(en.angle) * en.sz * 0.7,
+        3 + Math.random() * 2, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    if (en.type === 'kh101') {
+      // Purple glow + "Кх-101" label
+      ctx.shadowColor = '#c084fc';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.arc(
+        en.x - Math.cos(en.angle) * en.sz * 0.6,
+        en.y - Math.sin(en.angle) * en.sz * 0.6,
+        2.5 + Math.random() * 1.5, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      if (g.tick % 70 < 50) {
+        ctx.font = "bold 7px 'Courier New'";
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#c084fc88';
+        ctx.fillText('Кх-101', en.x, en.y - sz - 12);
+      }
+    }
     if (en.type === 'orlan') {
       // Pulsing green scanner ring
       const pulse = Math.sin(g.tick * 0.15) * 0.4 + 0.6;

@@ -41,8 +41,8 @@ export function createGameState(city, mode) {
     unitRoster: [],
     // Spawn/kill stats per enemy type
     totalSpawned: 0,
-    spawnedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0, orlan: 0 },
-    killedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0, orlan: 0 },
+    spawnedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0, orlan: 0, kalibr: 0, kh101: 0 },
+    killedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0, orlan: 0, kalibr: 0, kh101: 0 },
     // Events
     f16: null,
     f16Cooldown: 0,
