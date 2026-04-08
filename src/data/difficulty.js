@@ -6,7 +6,7 @@ export const MODES = {
     color: '#4ade80',
     startMoney: 350,
     waveBonus: 60,
-    costEsc: 0.20,
+    costEsc: 0.08,
     turret: { baseCost: 50, range: 140, damage: 14, fireRate: 14, hitChance: 0.65, maxHp: 100, maxCount: 10 },
     mvg: { baseCost: 40, range: 130, damage: 12, fireRate: 15, hitChance: 0.55, maxHp: 60, maxCount: 4, patrolRange: 56 },
     crew: { baseCost: 70, range: 260, damage: 40, fireRate: 75, hitChance: 0.80, lossChance: 0.08, maxHp: 70, maxCount: 6 },

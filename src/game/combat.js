@@ -36,7 +36,7 @@ export function updateCombat(g) {
       // Crew skips Shahed-238
       if (tw.type === 'crew' && en.type === 'shahed238') continue;
       // HAWK only targets slow enemies (Shahed, Geran, Kalibr, Orlan, Kh-101)
-      if (tw.type === 'hawk' && en.speed >= SLOW_SPEED_THRESHOLD) continue;
+      if (tw.type === 'hawk' && en.speed > SLOW_SPEED_THRESHOLD) continue;
       // IRIS-T targets highest HP enemy in range (not nearest)
       const d = dist(tw, en);
       if (d < effectiveRange) {
@@ -91,7 +91,7 @@ export function updateCombat(g) {
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: tw.damage, speed: 10, color: DEF_META.irist.color,
-        id: uid(), hitChance: Math.min(0.98, tw.hitChance + synergyAcc + accBonus),
+        id: uid(), hitChance: Math.min(0.98, (tw.hitChance + synergyAcc + accBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1)),
         sourceTowerId: tw.id, isIRIST: true,
       });
     } else if (tw.type === 'crew') {
@@ -156,8 +156,8 @@ export function updateCombat(g) {
       if (tgt) {
         // Guided drones can dodge
         const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile;
-        const accMul = weather.turretAccMul || weather.accuracyMul || 1;
-        if (!dodged && chance((p.hitChance || 0.5) * accMul)) {
+        // Weather accuracy already applied at projectile creation — no second multiplier
+        if (!dodged && chance(p.hitChance || 0.5)) {
           tgt.hp -= p.damage;
           g.explosions.push({ x: p.tx, y: p.ty, r: 10, life: 12, ml: 12 });
           // Track kill on source tower
