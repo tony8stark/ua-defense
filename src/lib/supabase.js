@@ -9,25 +9,23 @@ export function detectDevice() {
   return 'desktop';
 }
 
-// Upsert: if same name+city+difficulty exists and new score is higher, update it.
-// Otherwise insert new row.
+// Upsert via DB function: only updates if new score is higher
 export async function submitScore({ name, score, city, difficulty, wavesSurvived, kills }) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/upsert_score`, {
     method: 'POST',
     headers: {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      Prefer: 'resolution=merge-duplicates',
     },
     body: JSON.stringify({
-      name,
-      score,
-      city,
-      difficulty,
-      waves_survived: wavesSurvived,
-      kills,
-      device: detectDevice(),
+      p_name: name,
+      p_score: score,
+      p_city: city,
+      p_difficulty: difficulty,
+      p_waves_survived: wavesSurvived,
+      p_kills: kills,
+      p_device: detectDevice(),
     }),
   });
   return res.ok;

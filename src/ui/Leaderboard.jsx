@@ -81,11 +81,9 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
                   }}>
                     {e.name}
                   </div>
-                  {isTop3 && (
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                      {cityObj?.emoji} {cityObj?.name} · {modeObj?.label} · {e.device === 'mobile' ? '📱' : '💻'}
-                    </div>
-                  )}
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                    {cityObj?.emoji} {cityObj?.name} · {modeObj?.label} · {e.device === 'mobile' ? '📱' : '💻'}
+                  </div>
                 </div>
 
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
