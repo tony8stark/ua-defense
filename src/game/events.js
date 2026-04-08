@@ -2,6 +2,7 @@
 import { TICK, rnd, uid } from './physics.js';
 import { addLog } from './state.js';
 import { playJetFlyby, playEWBuzz } from '../audio/SoundManager.js';
+import { getF16Quip, getEWQuip } from '../data/battleQuips.js';
 
 // ====== F-16 VIPER ======
 
@@ -22,7 +23,7 @@ export function trySpawnF16(g) {
     trail: [],
   };
   g.f16Cooldown = 3; // can't appear for next 3 waves
-  addLog(g, '🛩️ F-16 Viper на підході!');
+  addLog(g, `🛩️ ${getF16Quip('arrive')}`);
   playJetFlyby();
 }
 
@@ -48,7 +49,7 @@ export function updateF16(g) {
       });
       f.missiles--;
       f.missileCooldown = 25;
-      addLog(g, '🚀 AIM-120 пущено!');
+      addLog(g, `🚀 ${getF16Quip('missile')}`);
     }
   }
 
@@ -128,7 +129,7 @@ export function trySpawnEW(g) {
 
   g.ewActive = { timer: rnd(400, 650), maxTimer: 650 };
   g.ewCooldown = 2;
-  addLog(g, '📡 ВОРОЖИЙ РЕБ! Зв\'язок порушено!');
+  addLog(g, `📡 ${getEWQuip('start')}`);
   playEWBuzz();
 }
 
@@ -137,7 +138,7 @@ export function updateEW(g) {
   g.ewActive.timer -= TICK;
   if (g.ewActive.timer <= 0) {
     g.ewActive = null;
-    addLog(g, '📡 Ворожий РЕБ деактивовано');
+    addLog(g, `📡 ${getEWQuip('end')}`);
   }
 }
 

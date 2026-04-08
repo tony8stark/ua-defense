@@ -7,6 +7,7 @@ import { trySpawnF16, updateF16, trySpawnEW, updateEW, rollWeather } from './eve
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
+import { getWaveStartQuip, getWaveCompleteQuip, getWeatherQuip, getIntelQuip } from '../data/battleQuips.js';
 
 // Start a wave
 export function startWave(g) {
@@ -20,8 +21,11 @@ export function startWave(g) {
   // Roll new weather for this wave
   g.weather = rollWeather();
   if (g.weather.id !== 'clear') {
-    addLog(g, `${g.weather.label}`);
+    const wq = getWeatherQuip(g.weather.id);
+    addLog(g, wq || g.weather.label);
   }
+
+  addLog(g, getWaveStartQuip());
 
   // Try spawn events at wave start
   trySpawnF16(g);
@@ -53,7 +57,11 @@ export function update(g) {
     g.weather = rollWeather(); // reset weather between waves
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
-    addLog(g, `Хвилю ${g.wave} відбито! +${bonus}💰`);
+    addLog(g, `${getWaveCompleteQuip()} +${bonus}💰`);
+    // Intel quip between waves (not on last wave)
+    if (g.wave < g.mode.waves.length) {
+      setTimeout(() => { addLog(g, getIntelQuip()); }, 1500);
+    }
     playWaveComplete();
     if (g.wave >= g.mode.waves.length) return 'won';
   }

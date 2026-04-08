@@ -4,6 +4,7 @@ import { DEF_META } from '../data/units.js';
 import { addLog } from './state.js';
 import { getEWMultipliers } from './events.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
+import { getKillQuip } from '../data/battleQuips.js';
 
 export function updateCombat(g) {
   const m = g.mode;
@@ -112,10 +113,14 @@ export function updateCombat(g) {
             g.money += tgt.reward;
             g.score += tgt.reward;
             g.killed++;
+            if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
             playExplosion(false);
             // Credit kill to tower
             const src = p.sourceTowerId ? g.towers.find(t => t.id === p.sourceTowerId) : null;
             if (src) src.kills = (src.kills || 0) + 1;
+            // Random kill quip
+            const quip = getKillQuip(tgt.type);
+            if (quip) addLog(g, quip);
             g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });
             for (let i = 0; i < 6; i++) {
               g.particles.push({ x: tgt.x, y: tgt.y, vx: rnd(-3, 3), vy: rnd(-3, 3), life: rnd(15, 30), color: tgt.color });
@@ -179,11 +184,14 @@ export function updateCombat(g) {
           g.money += tgt.reward;
           g.score += tgt.reward;
           g.killed++;
+          if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
           // Credit kill to crew tower
           if (fd.sourceTowerId) {
             const src = g.towers.find(t => t.id === fd.sourceTowerId);
             if (src) src.kills = (src.kills || 0) + 1;
           }
+          const quip = getKillQuip(tgt.type);
+          if (quip) addLog(g, quip);
           g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });
         }
       } else {

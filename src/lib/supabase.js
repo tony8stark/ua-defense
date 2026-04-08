@@ -10,7 +10,7 @@ export function detectDevice() {
 }
 
 // Upsert via DB function: only updates if new score is higher
-export async function submitScore({ name, score, city, difficulty, wavesSurvived, kills }) {
+export async function submitScore({ name, score, city, difficulty, wavesSurvived, kills, totalSpawned }) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/upsert_score`, {
     method: 'POST',
     headers: {
@@ -25,6 +25,7 @@ export async function submitScore({ name, score, city, difficulty, wavesSurvived
       p_difficulty: difficulty,
       p_waves_survived: wavesSurvived,
       p_kills: kills,
+      p_total_spawned: totalSpawned,
       p_device: detectDevice(),
     }),
   });
@@ -33,7 +34,7 @@ export async function submitScore({ name, score, city, difficulty, wavesSurvived
 
 export async function fetchLeaderboard(city, difficulty, limit = 25) {
   const params = new URLSearchParams({
-    select: 'id,name,score,city,difficulty,waves_survived,kills,device,created_at',
+    select: 'id,name,score,city,difficulty,waves_survived,kills,total_spawned,device,created_at',
     order: 'score.desc',
     limit: String(limit),
   });

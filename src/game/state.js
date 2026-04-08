@@ -39,6 +39,10 @@ export function createGameState(city, mode) {
     logs: [],
     // Unit roster: tracks ALL units ever placed (for end-game summary)
     unitRoster: [],
+    // Spawn/kill stats per enemy type
+    totalSpawned: 0,
+    spawnedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0 },
+    killedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0 },
     // Events
     f16: null,
     f16Cooldown: 0,
@@ -61,6 +65,9 @@ export function getUIState(g) {
     score: g.score,
     wave: g.wave,
     killed: g.killed,
+    totalSpawned: g.totalSpawned,
+    spawnedByType: { ...g.spawnedByType },
+    killedByType: { ...g.killedByType },
     waveActive: g.waveActive,
     bHp,
     counts,

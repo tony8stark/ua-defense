@@ -94,7 +94,7 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
                     {e.score}
                   </div>
                   <div className="font-mono" style={{ fontSize: 11, color: '#64748b' }}>
-                    💀{e.kills} 🌊{e.waves_survived}
+                    💀{e.total_spawned ? `${e.kills}/${e.total_spawned}` : e.kills} 🌊{e.waves_survived}
                   </div>
                 </div>
               </div>

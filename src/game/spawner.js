@@ -57,6 +57,10 @@ export function spawnEnemy(g, type) {
     angle: Math.PI,
     dodgeChance: et.dodgeChance || 0,
   });
+
+  // Track spawn stats
+  g.totalSpawned++;
+  if (g.spawnedByType[type] !== undefined) g.spawnedByType[type]++;
 }
 
 // Re-target an enemy that lost its target

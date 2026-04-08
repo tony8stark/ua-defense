@@ -3,9 +3,18 @@ import { MODES } from '../data/difficulty.js';
 import { DEF_META } from '../data/units.js';
 import { submitScore } from '../lib/supabase.js';
 
-export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, onMenu, onLeaderboard }) {
+const ENEMY_META = {
+  shahed: { name: 'Shahed-136', emoji: '🛩️', color: '#94a3b8' },
+  shahed238: { name: 'Shahed-238', emoji: '⚡', color: '#fbbf24' },
+  geran: { name: 'Geran-2', emoji: '🪖', color: '#cbd5e1' },
+  lancet: { name: 'Lancet-3', emoji: '🎯', color: '#f87171' },
+  guided: { name: 'Керований', emoji: '👁️', color: '#ff6b6b' },
+};
+
+export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, onMenu, onLeaderboard }) {
   const m = MODES[difficulty];
   const survived = Object.values(bHp).filter(h => h > 0).length;
+  const killRate = totalSpawned > 0 ? Math.round((killed / totalSpawned) * 100) : 0;
   const [name, setName] = useState(() => {
     try { return localStorage.getItem('ua-player-name') || ''; } catch { return ''; }
   });
@@ -18,6 +27,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
     try { localStorage.setItem('ua-player-name', name.trim()); } catch {}
     const ok = await submitScore({
       name: name.trim(), score, city: cityId, difficulty, wavesSurvived: wave, kills: killed,
+      totalSpawned: totalSpawned || 0,
     });
     setSubmitting(false);
     if (ok) setSubmitted(true);
@@ -32,6 +42,11 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
   const totalUnits = sortedRoster.length;
   const destroyedUnits = sortedRoster.filter(u => !u.alive && !u.soldByPlayer).length;
   const soldUnits = sortedRoster.filter(u => u.soldByPlayer).length;
+
+  // Build enemy breakdown (only types that actually spawned)
+  const enemyBreakdown = spawnedByType ? Object.entries(spawnedByType)
+    .filter(([, n]) => n > 0)
+    .sort(([, a], [, b]) => b - a) : [];
 
   return (
     <div style={{
@@ -55,7 +70,8 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
       <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
         {[
           { label: 'Рахунок', value: score, color: '#fbbf24' },
-          { label: 'Збито', value: killed, color: '#ef4444' },
+          { label: 'Збито', value: totalSpawned > 0 ? `${killed}/${totalSpawned}` : killed, color: '#ef4444' },
+          { label: '% збиття', value: `${killRate}%`, color: killRate >= 80 ? '#4ade80' : killRate >= 50 ? '#f59e0b' : '#ef4444' },
           { label: 'Хвилі', value: `${wave}/${m?.waves.length || 0}`, color: '#a78bfa' },
           { label: "Об'єкти", value: `${survived}/5`, color: '#4ade80' },
         ].map(s => (
@@ -66,12 +82,49 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         ))}
       </div>
 
+      {/* Enemy breakdown */}
+      {enemyBreakdown.length > 0 && (
+        <div style={{
+          width: '100%', maxWidth: 480, marginBottom: 16,
+          background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            Розбивка по типах
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {enemyBreakdown.map(([type, spawned]) => {
+              const kills = killedByType?.[type] || 0;
+              const rate = spawned > 0 ? Math.round((kills / spawned) * 100) : 0;
+              const meta = ENEMY_META[type];
+              return (
+                <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, width: 20, textAlign: 'center', flexShrink: 0 }}>{meta?.emoji}</span>
+                  <span style={{ fontSize: 12, color: meta?.color || '#94a3b8', minWidth: 90 }}>{meta?.name}</span>
+                  <div style={{ flex: 1, height: 6, background: '#1e293b', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${rate}%`, height: '100%', borderRadius: 3,
+                      background: rate >= 80 ? '#4ade80' : rate >= 50 ? '#f59e0b' : '#ef4444',
+                    }} />
+                  </div>
+                  <span className="font-mono" style={{
+                    fontSize: 12, color: rate >= 80 ? '#4ade80' : rate >= 50 ? '#f59e0b' : '#ef4444',
+                    minWidth: 70, textAlign: 'right',
+                  }}>
+                    {kills}/{spawned} ({rate}%)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Roster */}
       {sortedRoster.length > 0 && (
         <div style={{
           width: '100%', maxWidth: 480, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '14px 16px',
-          maxHeight: '40dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          maxHeight: '35dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, flexShrink: 0 }}>
             Особовий склад ({totalUnits} розм. · {destroyedUnits} знищ.{soldUnits > 0 ? ` · ${soldUnits} прод.` : ''})

@@ -4,6 +4,7 @@ import { GRID } from '../data/cities.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed } from './state.js';
 import { playSiren, playExplosion } from '../audio/SoundManager.js';
+import { getIskanderQuip } from '../data/battleQuips.js';
 
 export function updateIskander(g) {
   const m = g.mode;
@@ -40,7 +41,7 @@ function spawnWarning(g, m) {
   const gy = Math.floor(Math.random() * rows) * GRID + GRID / 2;
 
   g.iskanderWarn = { x: gx, y: gy, life: m.iskander.warnTicks };
-  addLog(g, '🚀 ІСКАНДЕР — УВАГА! Удар через секунди!');
+  addLog(g, `🚀 ${getIskanderQuip('incoming')}`);
   playSiren();
 }
 
@@ -57,7 +58,7 @@ function impact(g, m) {
         g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
       }
       markUnitDestroyed(g, tw.id);
-      addLog(g, `🚀 ІСКАНДЕР знищив ${DEF_META[tw.type].name}!`);
+      addLog(g, `🚀 ${getIskanderQuip('hit')}`);
     } else if (d < GRID * 1.6) {
       tw.hp = Math.max(0, tw.hp - Math.round(tw.maxHp * m.iskander.splashPct));
       if (tw.hp <= 0) {

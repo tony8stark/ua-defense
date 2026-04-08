@@ -4,6 +4,7 @@ import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
 import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster } from './game/state.js';
+import { getIskanderQuip } from './data/battleQuips.js';
 import { getCallsign } from './data/callsigns.js';
 import { playPlace, playSell, playGameOver, playWaveComplete, resumeOnInteraction } from './audio/SoundManager.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
@@ -303,7 +304,7 @@ export default function App() {
       }
     }
     if (moved > 0) {
-      addLog(g, `🏃 Евакуація! ${moved} позиц. переміщено`);
+      addLog(g, `🏃 ${getIskanderQuip('scramble')}`);
       syncUI();
     }
   }, []);
@@ -382,7 +383,7 @@ export default function App() {
     const g = gRef.current;
     const mvp = g?.towers?.filter(t => (t.kills || 0) > 0).sort((a, b) => (b.kills || 0) - (a.kills || 0))[0] || null;
     const roster = gRef.current ? getFinalRoster(gRef.current) : [];
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
   // PLAYING
