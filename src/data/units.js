@@ -1,6 +1,7 @@
 // Defense unit metadata (visuals, names)
 export const DEF_META = {
   turret: { name: 'ЗУ Турель', color: '#4ade80', emoji: '🔫' },
+  mvg: { name: 'МВГ', color: '#22d3ee', emoji: '🚗' },
   crew: { name: 'Екіпаж FPV', color: '#38bdf8', emoji: '🎮' },
   airfield: { name: 'Аеродром', color: '#f59e0b', emoji: '🛫' },
   hawk: { name: 'HAWK', color: '#a3e635', emoji: '🦅' },
@@ -16,6 +17,11 @@ export const UPGRADES = {
     { label: 'Рівень 1', costMul: 0, stats: {} },
     { label: 'Рівень 2', costMul: 0.8, stats: { range: 1.2, damage: 1.3 }, desc: '+20% дальність, +30% урон' },
     { label: 'Рівень 3', costMul: 1.2, stats: { range: 1.35, damage: 1.5, fireRate: 0.8, hitChance: 1.15 }, desc: '+35% дальн, +50% урон, швидше, +15% точність' },
+  ],
+  mvg: [
+    { label: 'Рівень 1', costMul: 0, stats: {} },
+    { label: 'Рівень 2', costMul: 0.7, stats: { damage: 1.25, hitChance: 1.1 }, desc: '+25% урон, +10% точність' },
+    { label: 'Рівень 3', costMul: 1.0, stats: { damage: 1.4, range: 1.15, hitChance: 1.15 }, desc: '+40% урон, +15% дальн, +15% точність' },
   ],
   crew: [
     { label: 'Рівень 1', costMul: 0, stats: {} },

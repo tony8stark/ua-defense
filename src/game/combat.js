@@ -63,7 +63,7 @@ export function updateCombat(g) {
     // +5% accuracy per unique neighbor type (max +15%)
     synergyAcc = Math.min(0.15, neighborTypes.size * 0.05);
 
-    if (tw.type === 'turret' || tw.type === 'hawk') {
+    if (tw.type === 'turret' || tw.type === 'mvg' || tw.type === 'hawk') {
       if (g.tick % 3 === 0) playShoot();
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,

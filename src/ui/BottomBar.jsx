@@ -1,6 +1,6 @@
 import { DEF_META, getCost } from '../data/units.js';
 
-const UNIT_ORDER = ['turret', 'crew', 'airfield', 'hawk', 'gepard', 'irist', 'decoy'];
+const UNIT_ORDER = ['turret', 'mvg', 'crew', 'airfield', 'hawk', 'gepard', 'irist', 'decoy'];
 
 export default function BottomBar({ mode, selected, onSelect, counts, waveActive, wave, onStartWave, spd, onToggleSpeed, trivogaActive, trivogaCooldown, onTrivoga }) {
   const totalWaves = mode.waves.length;

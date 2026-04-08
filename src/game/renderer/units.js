@@ -72,6 +72,26 @@ export function drawTowers(ctx, g) {
       ctx.fillText(isAlive ? mc.emoji : '💥', tw.x, tw.y);
     }
 
+    // MVG patrol path indicator
+    if (isAlive && tw.type === 'mvg' && tw.originX !== undefined) {
+      const pr = tw.patrolRange || 56;
+      const ax = Math.cos(tw.patrolAngle);
+      const ay = Math.sin(tw.patrolAngle);
+      ctx.strokeStyle = '#22d3ee15';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.moveTo(tw.originX - ax * pr, tw.originY - ay * pr);
+      ctx.lineTo(tw.originX + ax * pr, tw.originY + ay * pr);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Small dot at origin
+      ctx.fillStyle = '#22d3ee20';
+      ctx.beginPath();
+      ctx.arc(tw.originX, tw.originY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // HP bar (if damaged)
     if (isAlive && tw.hp < tw.maxHp) {
       const pct = tw.hp / tw.maxHp;

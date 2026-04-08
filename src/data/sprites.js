@@ -21,6 +21,16 @@ export const TOWER_SPRITES = {
     <circle cx="16" cy="16" r="4" fill="#4ade8088"/>
   </svg>`),
 
+  mvg: svgToImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+    <rect x="6" y="10" width="20" height="12" rx="3" fill="#0c2a2a" stroke="#22d3ee" stroke-width="1.5"/>
+    <rect x="12" y="6" width="8" height="8" rx="1" fill="#22d3ee" opacity="0.8"/>
+    <rect x="15" y="2" width="2" height="6" rx="0.5" fill="#22d3ee"/>
+    <circle cx="10" cy="24" r="3" fill="#22d3ee" opacity="0.6"/>
+    <circle cx="22" cy="24" r="3" fill="#22d3ee" opacity="0.6"/>
+    <circle cx="10" cy="24" r="1.5" fill="#0c2a2a"/>
+    <circle cx="22" cy="24" r="1.5" fill="#0c2a2a"/>
+  </svg>`),
+
   crew: svgToImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
     <circle cx="16" cy="16" r="12" fill="#0c2435" stroke="#38bdf8" stroke-width="2"/>
     <rect x="10" y="12" width="12" height="8" rx="2" fill="#38bdf8"/>

@@ -125,6 +125,16 @@ export default function App() {
     }
 
     const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0, callsign: getCallsign(), kills: 0 };
+
+    // MVG: store patrol origin and random angle
+    if (sel === 'mvg') {
+      tower.originX = gx;
+      tower.originY = gy;
+      tower.patrolAngle = Math.random() * Math.PI;
+      tower.patrolSeed = Math.random() * Math.PI * 2;
+      tower.patrolRange = def.patrolRange || 56;
+    }
+
     g.towers.push(tower);
     registerUnit(g, tower);
 

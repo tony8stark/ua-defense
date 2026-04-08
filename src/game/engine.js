@@ -195,6 +195,16 @@ export function update(g) {
   g.enemies = g.enemies.filter(e => e.hp > 0);
   g.towers = g.towers.filter(t => t.hp > 0 || (t.deathTimer || 0) > 0);
 
+  // MVG patrol movement
+  for (const tw of g.towers) {
+    if (tw.type === 'mvg' && tw.hp > 0 && tw.originX !== undefined) {
+      const pr = tw.patrolRange || 56;
+      const phase = g.tick * 0.03 + (tw.patrolSeed || 0);
+      tw.x = tw.originX + Math.cos(tw.patrolAngle) * Math.sin(phase) * pr;
+      tw.y = tw.originY + Math.sin(tw.patrolAngle) * Math.sin(phase) * pr;
+    }
+  }
+
   // Combat
   updateCombat(g);
   updateCombo(g);

@@ -72,7 +72,7 @@ export function getUIState(g) {
   const bHp = {};
   g.buildings.forEach(b => { bHp[b.key] = b.hp; });
 
-  const counts = { turret: 0, crew: 0, airfield: 0, hawk: 0, gepard: 0, irist: 0, decoy: 0 };
+  const counts = { turret: 0, mvg: 0, crew: 0, airfield: 0, hawk: 0, gepard: 0, irist: 0, decoy: 0 };
   g.towers.filter(t => t.hp > 0).forEach(t => { counts[t.type]++; });
 
   return {

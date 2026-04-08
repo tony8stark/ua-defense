@@ -63,7 +63,7 @@ export default function MainMenu({ onSelectCity, onShowLeaderboard, onShowTech }
           <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
             <div>
               <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, color: '#4ade80' }}>Оборона</span>
-              <div>🔫 Турель · 🎮 FPV · 🛫 Аеродром</div>
+              <div>🔫 Турель · 🚗 МВГ · 🎮 FPV · 🛫 Аеродром</div>
               <div>🦅 HAWK · 🐆 Gepard · 💎 IRIS-T</div>
             </div>
             <div>
