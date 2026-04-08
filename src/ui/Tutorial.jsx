@@ -5,59 +5,51 @@ const STEPS = [
   {
     title: 'Ласкаво просимо!',
     text: 'Ти командуєш силами ППО. Завдання: захистити інфраструктуру від ворожих дронів та ракет.',
-    highlight: null,
-    position: 'center',
+    emoji: '🛡️',
   },
   {
-    title: 'Обирай зброю',
-    text: 'Внизу екрану — панель з типами веж. Обери тип і клікни на карту, щоб поставити.',
-    highlight: 'bottom-bar',
-    position: 'top',
+    title: 'Засоби ураження',
+    text: 'Внизу екрану панель із засобами ураження. Обери потрібний тип та клікни на карту, щоб розмістити.',
   },
   {
-    title: 'Постав першу вежу',
-    text: '🔫 Турель — найдешевша і найточніша. Почни з неї. Клікни на зелену зону на карті.',
-    highlight: 'canvas',
-    position: 'bottom',
+    title: 'Перший засіб',
+    text: '🔫 Турель найдешевша і найточніша. Непоганий вибір для початку. 🚗 МВГ патрулює район і покриває більшу площу.',
   },
   {
-    title: 'Запусти хвилю',
-    text: 'Натисни червону кнопку «🚀 Хвиля!» коли будеш готовий. Вороги летітимуть з країв карти.',
-    highlight: 'wave-btn',
-    position: 'top',
+    title: 'Запуск хвилі',
+    text: 'Кнопка «🚀 Хвиля!» запускає атаку ворога. Між хвилями можна розміщувати нові засоби та ремонтувати будівлі.',
   },
   {
     title: 'Іскандер!',
-    text: 'Коли побачиш червоний прицiл — це балістична ракета. Клікни на нього, щоб евакуювати вежі!',
-    highlight: null,
-    position: 'center',
+    text: 'Червоний прицiл на карті означає балістичну ракету. Клікни на нього, щоб евакуювати засоби, яким загрожує удар.',
     emoji: '🚀',
   },
   {
-    title: 'Різні вежі',
-    text: '🦅 HAWK — проти повільних. 🐆 Gepard — швидкострільний. 💎 IRIS-T — знищує миттєво. 🪤 Хибна ціль — приманка.',
-    highlight: null,
-    position: 'center',
+    title: 'Арсенал',
+    richText: [
+      '🔫 Турель — точний стаціонарний вогонь',
+      '🚗 МВГ — мобільний патруль, ширше покриття',
+      '🎮 FPV — далекобійні дрони з шансом крит-збиття',
+      '🛫 Аеродром — кукурузник на патрулюванні',
+      '🦅 HAWK — висока точність по повільних цілях (Шахед, Геран)',
+      '🐆 Gepard — швидкострільна зенітка ближнього бою',
+      '💎 IRIS-T — одна ракета, гарантоване знищення будь-якої цілі',
+      '🪤 Хибна ціль — відволікає Іскандер та керовані дрони',
+    ],
   },
   {
     title: 'Тривога!',
-    text: 'Кнопка 🚨 вмикає режим Тривога — всі вежі стріляють вдвічі швидше 5 секунд. Використовуй у найгарячіші моменти!',
-    highlight: null,
-    position: 'center',
+    text: 'Кнопка 🚨 подвоює швидкість стрільби всіх засобів на 5 секунд. Перезарядка 45 секунд. Активуй в найнапруженіший момент.',
     emoji: '🚨',
   },
   {
     title: 'Невидимі цілі',
-    text: 'Деякі дрони летять низько і невидимі, поки не наблизяться до веж. Ставь оборону вглиб!',
-    highlight: null,
-    position: 'center',
+    text: 'Деякі дрони летять низько і невидимі, поки не наблизяться до засобів ураження. Розміщуй оборону вглиб.',
     emoji: '👻',
   },
   {
-    title: 'Готовий!',
-    text: 'Стався оборону, збивай ворогів, заробляй гроші на нові вежі. Вдачі, командире!',
-    highlight: null,
-    position: 'center',
+    title: 'В бій!',
+    text: 'Розміщуй засоби, збивай ворогів, заробляй гроші на нові закупівлі. Вдачі, друже!',
     emoji: '🇺🇦',
   },
 ];
@@ -107,9 +99,9 @@ export default function Tutorial({ onClose }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
         background: 'rgba(0,0,0,0.75)',
-        display: 'flex', alignItems: s.position === 'top' ? 'flex-start' : s.position === 'bottom' ? 'flex-end' : 'center',
+        display: 'flex', alignItems: 'center',
         justifyContent: 'center',
-        padding: s.position === 'top' ? '60px 16px' : s.position === 'bottom' ? '16px 16px 100px' : '16px',
+        padding: '16px',
       }}
     >
       <div
@@ -119,18 +111,22 @@ export default function Tutorial({ onClose }) {
           border: '2px solid #334155',
           borderRadius: 16,
           padding: '24px 28px',
-          maxWidth: 420,
+          maxWidth: 440,
           width: '100%',
-          textAlign: 'center',
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
         }}
       >
-        {s.emoji && <div style={{ fontSize: 40, marginBottom: 8 }}>{s.emoji}</div>}
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#e2e8f0', marginBottom: 8 }}>{s.title}</h2>
-        <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6, marginBottom: 20 }}>{s.text}</p>
+        {s.emoji && <div style={{ fontSize: 40, marginBottom: 8, textAlign: 'center' }}>{s.emoji}</div>}
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#e2e8f0', marginBottom: 8, textAlign: 'center' }}>{s.title}</h2>
+        {s.text && <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6, marginBottom: 20, textAlign: 'center' }}>{s.text}</p>}
+        {s.richText && (
+          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.8, marginBottom: 20, textAlign: 'left' }}>
+            {s.richText.map((line, i) => <div key={i}>{line}</div>)}
+          </div>
+        )}
 
         {/* Progress dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 16, textAlign: 'center' }}>
           {STEPS.map((_, i) => (
             <div key={i} style={{
               width: i === step ? 18 : 6, height: 6, borderRadius: 3,

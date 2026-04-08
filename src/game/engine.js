@@ -5,7 +5,7 @@ import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
-import { addLog, markUnitDestroyed, updateCombo, updateTrivoga } from './state.js';
+import { addLog, markUnitDestroyed, updateCombo, updateTrivoga, getBuildingBonuses } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
 import { getWaveStartQuip, getWaveCompleteQuip, getWeatherQuip, getIntelQuip } from '../data/battleQuips.js';
 
@@ -71,7 +71,8 @@ export function update(g) {
   if (g.waveActive && g.spawnQueue.length === 0 && g.enemies.length === 0) {
     g.waveActive = false;
     g.wave++;
-    const bonus = g.mode.waveBonus + g.wave * 10;
+    const bb = getBuildingBonuses(g);
+    const bonus = g.mode.waveBonus + g.wave * 10 + bb.waveBonus;
     g.money += bonus;
     g.weather = rollWeather(); // reset weather between waves
     if (g.f16Cooldown > 0) g.f16Cooldown--;

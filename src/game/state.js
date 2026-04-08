@@ -136,6 +136,23 @@ export function getFinalRoster(g) {
   return g.unitRoster.map(u => ({ ...u }));
 }
 
+// Compute active building bonuses (only from alive buildings)
+export function getBuildingBonuses(g) {
+  const bonuses = { waveBonus: 0, range: 0, damage: 0, accuracy: 0, repairDiscount: 0 };
+  for (const b of g.buildings) {
+    if (b.hp > 0 && b.bonus) {
+      switch (b.bonus.type) {
+        case 'waveBonus': bonuses.waveBonus += b.bonus.value; break;
+        case 'range': bonuses.range += b.bonus.value; break;
+        case 'damage': bonuses.damage += b.bonus.value; break;
+        case 'accuracy': bonuses.accuracy += b.bonus.value; break;
+        case 'repair': bonuses.repairDiscount = b.bonus.value; break;
+      }
+    }
+  }
+  return bonuses;
+}
+
 export function addLog(g, msg) {
   g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 20);
 }

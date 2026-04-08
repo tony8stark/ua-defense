@@ -3,7 +3,7 @@ import { CITIES, GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
-import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster, activateTrivoga } from './game/state.js';
+import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster, activateTrivoga, getBuildingBonuses } from './game/state.js';
 import { getIskanderQuip } from './data/battleQuips.js';
 import { playSiren } from './audio/SoundManager.js';
 import { getCallsign } from './data/callsigns.js';
@@ -280,7 +280,9 @@ export default function App() {
     const b = g.buildings.find(bl => bl.key === building.key);
     if (!b || b.hp <= 0 || b.hp >= b.maxHp) return;
     const repairAmount = b.maxHp - b.hp;
-    const cost = Math.round(repairAmount * REPAIR_COST_PER_HP);
+    const bb = getBuildingBonuses(g);
+    const costPerHp = REPAIR_COST_PER_HP * (1 - bb.repairDiscount);
+    const cost = Math.round(repairAmount * costPerHp);
     if (g.money < cost) return;
 
     b.hp = b.maxHp;

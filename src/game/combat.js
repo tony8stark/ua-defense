@@ -1,7 +1,7 @@
 // Combat system: towers firing, projectiles, FPV drones
 import { TICK, dist, ang, rnd, chance, uid } from './physics.js';
 import { DEF_META } from '../data/units.js';
-import { addLog, registerKill, getTrivogaFireRateMul } from './state.js';
+import { addLog, registerKill, getTrivogaFireRateMul, getBuildingBonuses } from './state.js';
 import { getEWMultipliers } from './events.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 import { getKillQuip } from '../data/battleQuips.js';
@@ -14,7 +14,8 @@ export function updateCombat(g) {
   // TURRETS, CREWS, HAWK, GEPARD, IRIS-T
   const SLOW_SPEED_THRESHOLD = 1.5;
   const trivogaMul = getTrivogaFireRateMul(g);
-  const SYNERGY_RANGE = 56; // ~2 grid cells (GRID=28)
+  const SYNERGY_RANGE = 56;
+  const bb = getBuildingBonuses(g); // building bonuses (range, damage, accuracy)
 
   for (const tw of g.towers) {
     if (tw.hp <= 0) {
@@ -28,7 +29,7 @@ export function updateCombat(g) {
 
     // Find target based on tower type
     let closest = null, closestDist = Infinity;
-    const effectiveRange = tw.range * (weather.rangeMul || 1);
+    const effectiveRange = tw.range * (weather.rangeMul || 1) * (1 + bb.range);
     for (const en of g.enemies) {
       // Stealth enemies can't be targeted
       if (en.stealth) continue;
@@ -63,12 +64,15 @@ export function updateCombat(g) {
     // +5% accuracy per unique neighbor type (max +15%)
     synergyAcc = Math.min(0.15, neighborTypes.size * 0.05);
 
+    const dmgMul = 1 + bb.damage;
+    const accBonus = bb.accuracy;
+
     if (tw.type === 'turret' || tw.type === 'mvg' || tw.type === 'hawk') {
       if (g.tick % 3 === 0) playShoot();
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
-        damage: tw.damage, speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
-        id: uid(), hitChance: (tw.hitChance + synergyAcc) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
+        damage: Math.round(tw.damage * dmgMul), speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
+        id: uid(), hitChance: (tw.hitChance + synergyAcc + accBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
         sourceTowerId: tw.id,
       });
     } else if (tw.type === 'gepard') {
@@ -77,8 +81,8 @@ export function updateCombat(g) {
         g.projectiles.push({
           x: tw.x + rnd(-3, 3), y: tw.y + rnd(-3, 3),
           tid: closest.id, tx: closest.x + rnd(-5, 5), ty: closest.y + rnd(-5, 5),
-          damage: tw.damage, speed: 9, color: DEF_META.gepard.color,
-          id: uid(), hitChance: (tw.hitChance + synergyAcc) * (weather.accuracyMul || 1),
+          damage: Math.round(tw.damage * dmgMul), speed: 9, color: DEF_META.gepard.color,
+          id: uid(), hitChance: (tw.hitChance + synergyAcc + accBonus) * (weather.accuracyMul || 1),
           sourceTowerId: tw.id,
         });
       }
@@ -87,7 +91,7 @@ export function updateCombat(g) {
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: tw.damage, speed: 10, color: DEF_META.irist.color,
-        id: uid(), hitChance: Math.min(0.98, tw.hitChance + synergyAcc),
+        id: uid(), hitChance: Math.min(0.98, tw.hitChance + synergyAcc + accBonus),
         sourceTowerId: tw.id, isIRIST: true,
       });
     } else if (tw.type === 'crew') {

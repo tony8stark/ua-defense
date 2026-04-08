@@ -108,9 +108,14 @@ function BuildingMenu({ item, money, waveActive, onRepair }) {
       <div style={{ fontSize: 14, fontWeight: 800, color: item.hp > 0 ? '#4ade80' : '#ef4444', marginBottom: 2 }}>
         {item.emoji} {item.name}
       </div>
-      <div className="font-mono" style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 10 }}>
+      <div className="font-mono" style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 4 }}>
         HP: {item.hp}/{item.maxHp}
       </div>
+      {item.bonus && (
+        <div style={{ fontSize: 11, color: item.hp > 0 ? '#fbbf24' : '#64748b', marginBottom: 8 }}>
+          {item.hp > 0 ? '✓' : '✗'} {item.bonus.desc}
+        </div>
+      )}
 
       {damaged && (
         <button
