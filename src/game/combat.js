@@ -1,7 +1,7 @@
 // Combat system: towers firing, projectiles, FPV drones
 import { TICK, dist, ang, rnd, chance, uid } from './physics.js';
 import { DEF_META } from '../data/units.js';
-import { addLog, registerKill } from './state.js';
+import { addLog, registerKill, getTrivogaFireRateMul } from './state.js';
 import { getEWMultipliers } from './events.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 import { getKillQuip } from '../data/battleQuips.js';
@@ -12,7 +12,8 @@ export function updateCombat(g) {
   const weather = g.weather?.effects || {};
 
   // TURRETS, CREWS, HAWK, GEPARD, IRIS-T
-  const SLOW_SPEED_THRESHOLD = 1.5; // HAWK only targets enemies slower than this
+  const SLOW_SPEED_THRESHOLD = 1.5;
+  const trivogaMul = getTrivogaFireRateMul(g); // 0.5 when active = cooldowns drain 2x faster
 
   for (const tw of g.towers) {
     if (tw.hp <= 0) {
@@ -21,7 +22,7 @@ export function updateCombat(g) {
     }
     if (tw.type === 'airfield' || tw.type === 'decoy') continue;
 
-    tw.cooldown = Math.max(0, tw.cooldown - TICK);
+    tw.cooldown = Math.max(0, tw.cooldown - TICK / trivogaMul);
     if (tw.cooldown > 0) continue;
 
     // Find target based on tower type
@@ -105,7 +106,7 @@ export function updateCombat(g) {
     k.y = k.py + Math.sin(k.oa) * k.or;
     k.angle = k.oa + Math.PI / 2;
 
-    k.cooldown = Math.max(0, k.cooldown - TICK);
+    k.cooldown = Math.max(0, k.cooldown - TICK / trivogaMul);
     if (k.cooldown > 0) continue;
 
     let closest = null, closestDist = Infinity;

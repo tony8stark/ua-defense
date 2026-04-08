@@ -3,8 +3,9 @@ import { CITIES, GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
-import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster } from './game/state.js';
+import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster, activateTrivoga } from './game/state.js';
 import { getIskanderQuip } from './data/battleQuips.js';
+import { playSiren } from './audio/SoundManager.js';
 import { getCallsign } from './data/callsigns.js';
 import { playPlace, playSell, playGameOver, playWaveComplete, resumeOnInteraction } from './audio/SoundManager.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
@@ -275,6 +276,16 @@ export default function App() {
     syncUI();
   }, []);
 
+  // Тривога! active ability
+  const handleTrivoga = useCallback(() => {
+    const g = gRef.current;
+    if (!g || !g.waveActive) return;
+    if (activateTrivoga(g)) {
+      playSiren();
+      syncUI();
+    }
+  }, []);
+
   // Iskander scramble: click warning zone to move nearby towers away
   const handleIskanderScramble = useCallback((pos) => {
     const g = gRef.current;
@@ -459,6 +470,8 @@ export default function App() {
           counts={ui.counts} waveActive={ui.waveActive} wave={ui.wave}
           onStartWave={startWave} spd={spd}
           onToggleSpeed={() => setSpd(spd >= 3 ? 1 : spd + 1)}
+          trivogaActive={ui.trivogaActive} trivogaCooldown={ui.trivogaCooldown}
+          onTrivoga={handleTrivoga}
         />
       </div>
 

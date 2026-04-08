@@ -25,4 +25,14 @@ export function draw(ctx, g, hover, selectedType) {
   drawPatriotAnim(ctx, g);
   drawEffects(ctx, g);
   drawEWOverlay(ctx, g);
+
+  // Тривога! active: red pulsing border
+  if (g.trivogaActive > 0) {
+    const pulse = Math.sin(g.tick * 0.25) * 0.3 + 0.5;
+    ctx.save();
+    ctx.strokeStyle = `rgba(251,191,36,${pulse * 0.6})`;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1, 1, W - 2, H - 2);
+    ctx.restore();
+  }
 }

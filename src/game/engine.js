@@ -5,7 +5,7 @@ import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
-import { addLog, markUnitDestroyed, updateCombo } from './state.js';
+import { addLog, markUnitDestroyed, updateCombo, updateTrivoga } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
 import { getWaveStartQuip, getWaveCompleteQuip, getWeatherQuip, getIntelQuip } from '../data/battleQuips.js';
 
@@ -158,6 +158,7 @@ export function update(g) {
   // Combat
   updateCombat(g);
   updateCombo(g);
+  updateTrivoga(g);
   g.enemies = g.enemies.filter(e => e.hp > 0);
 
   // Iskander

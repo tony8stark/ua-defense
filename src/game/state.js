@@ -49,6 +49,10 @@ export function createGameState(city, mode) {
     ewActive: null,
     ewCooldown: 0,
     weather: rollWeather(),
+    // Active ability: "Тривога!"
+    trivogaActive: 0,    // ticks remaining for buff
+    trivogaCooldown: 0,  // ticks remaining until can use again
+    trivogaUses: 0,      // total uses this game
     // Orlan recon: buff multiplier for next wave (1.0 = no buff)
     nextWaveBuff: 1.0,
     orlanEscapes: 0,
@@ -88,6 +92,8 @@ export function getUIState(g) {
     f16Active: !!g.f16,
     patriotInterceptions: g.patriotInterceptions,
     bestCombo: g.bestCombo,
+    trivogaActive: g.trivogaActive > 0,
+    trivogaCooldown: g.trivogaCooldown,
     towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
   };
 }
@@ -162,6 +168,28 @@ export function registerKill(g, reward, x, y) {
     }
   }
   return bonus;
+}
+
+// Тривога! active ability
+const TRIVOGA_DURATION = 90;   // ~5s buff at base speed
+const TRIVOGA_COOLDOWN = 810;  // ~45s cooldown at base speed
+
+export function activateTrivoga(g) {
+  if (g.trivogaCooldown > 0 || g.trivogaActive > 0) return false;
+  g.trivogaActive = TRIVOGA_DURATION;
+  g.trivogaCooldown = TRIVOGA_COOLDOWN;
+  g.trivogaUses++;
+  addLog(g, '🚨 ТРИВОГА! Всі системи на максимум!');
+  return true;
+}
+
+export function updateTrivoga(g) {
+  if (g.trivogaActive > 0) g.trivogaActive--;
+  if (g.trivogaCooldown > 0) g.trivogaCooldown--;
+}
+
+export function getTrivogaFireRateMul(g) {
+  return g.trivogaActive > 0 ? 0.5 : 1.0; // 0.5 = 50% faster (lower fireRate = faster)
 }
 
 export function updateCombo(g) {
