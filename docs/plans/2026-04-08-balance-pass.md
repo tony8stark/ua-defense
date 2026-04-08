@@ -10,7 +10,28 @@
 
 ---
 
+## Status
+
+- `Task 1` completed: telemetry and end-of-run balance summary are in place.
+- `Task 2` completed: unit efficiency was normalized once, then `realistic` was tightened again after live play feedback.
+- `Task 3` completed: wave sequencing now uses controlled chaos, and `kobayashiMaru` ships on top of that contract.
+- Additional shipped work outside the original four tasks:
+  - survival-first leaderboard encoding for `kobayashiMaru`
+  - `PROJECT.md` project brief
+  - selective PNG enemy sprite support for `shahed` and `lancet`
+- `Task 4` remains the main open balance item.
+
+## Next Pull
+
+1. Re-tune `EW` pressure so FPV play remains viable but never stable.
+2. Rework `Iskander` scramble/exploitation edge cases and make the punishment cleaner.
+3. Keep hardening `realistic` based on actual runs, not just spreadsheet metrics.
+4. Polish `kobayashiMaru` UI/leaderboard wording and score presentation.
+5. Add more regression tests around event pressure and late-game campaign failure states.
+
 ### Task 1: Add lightweight balance telemetry
+
+**Status:** Completed
 
 **Files:**
 - Modify: `src/game/state.js`
@@ -37,6 +58,8 @@ Expected: PASS
 
 ### Task 2: Normalize unit efficiency bands
 
+**Status:** Completed
+
 **Files:**
 - Modify: `src/data/difficulty.js`
 - Modify: `src/data/units.js`
@@ -60,12 +83,22 @@ Expected: FAIL because current coefficients overshoot for `gepard/irist` and und
 
 Adjust only the numeric values needed to bring expected value and constraints closer together.
 
+**Follow-up already applied**
+
+After live play feedback, `realistic` was tightened further:
+- lower defense ceiling
+- slower and less accurate fire for key units
+- slightly harsher enemy pressure
+- lower economy slack
+
 **Step 4: Run test to verify it passes**
 
 Run: `node --test tests/game-balance.test.js`
 Expected: PASS
 
 ### Task 3: Improve wave pacing and composition readability
+
+**Status:** Completed
 
 **Files:**
 - Modify: `src/data/difficulty.js`
@@ -90,6 +123,12 @@ Replace full-wave randomization with weighted uncertainty that still feels like 
 Run: `node --test tests/game-balance.test.js`
 Expected: PASS
 
+**Additional completed work on top of Task 3**
+
+- Added `kobayashiMaru` endless scaffolding with generated waves and enemy scaling.
+- Moved finite-vs-endless wave logic into shared helpers instead of spreading `mode.waves.length` checks across the app.
+- Added survival-first leaderboard handling for endless runs.
+
 **Design guardrails for Task 3**
 - Keep raw randomness as the base layer; only repair degenerate extremes after shuffling.
 - Guarantee at least one lower-pressure target in the opener when the wave actually contains lower-pressure targets.
@@ -98,6 +137,8 @@ Expected: PASS
 - Future follow-up knobs, if needed: soft same-type streak caps, rolling pressure budget, spawn-timer jitter by enemy class rather than fixed scripting.
 
 ### Task 4: Re-tune pressure events against each difficulty
+
+**Status:** Pending
 
 **Files:**
 - Modify: `src/game/events.js`

@@ -8,6 +8,15 @@ It is built as a lightweight React + canvas project with most gameplay behavior 
 This file is the top-level project brief.
 The same pattern is worth reusing in other repos: one stable `PROJECT.md` that explains what the project is, how it is structured, and where the important moving parts live.
 
+## Current State
+
+- Production is live on [ua-defense.vercel.app](https://ua-defense.vercel.app).
+- Campaign modes `training`, `realistic`, and `hell` are playable.
+- `kobayashiMaru` exists as an endless challenge scaffold with generated waves, enemy stat ramping, and survival-first leaderboard encoding.
+- Balance telemetry is wired into the end-of-run screen.
+- Enemy pacing uses controlled-chaos sequencing instead of raw full-shuffle.
+- Enemy art now supports mixed sprite sources: most enemies still use inline SVG, while selected ones such as `shahed` and `lancet` can use PNG assets when available.
+
 ## Design Pillars
 
 - Controlled chaos instead of deterministic tower-defense scripting.
@@ -63,6 +72,14 @@ The same pattern is worth reusing in other repos: one stable `PROJECT.md` that e
 - Campaign wave pacing uses controlled chaos: random order with guardrails against unreadable degeneracy.
 - `kobayashiMaru` should escalate mainly through raid density, spawn tempo, mixed composition, and event pressure before relying on raw stat inflation.
 - Reward growth should lag behind threat growth so endless mode trends toward eventual overmatch.
+- `realistic` has already been tightened once, but it still needs live playtest-driven hardening until high kill-rate runs stop feeling routine.
+
+## Active Priorities
+
+- Re-tune `EW` and `Iskander` so pressure stays high without becoming gimmicky or free to exploit.
+- Continue hardening `realistic` from actual runs, especially around tower uptime, upgrade efficiency, and event frequency.
+- Polish `kobayashiMaru` UX and leaderboard presentation now that the core scaffold exists.
+- Keep selective enemy sprite upgrades incremental instead of migrating the whole art pipeline to PNG.
 
 ## Commands
 
