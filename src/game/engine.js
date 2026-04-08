@@ -4,6 +4,7 @@ import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
+import { getWaveDef, hasMoreWaves } from './waves.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed, updateCombo, updateTrivoga, getBuildingBonuses } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
@@ -16,8 +17,9 @@ const ENEMY_SHORT = {
 
 // Start a wave
 export function startWave(g) {
-  if (g.waveActive || g.wave >= g.mode.waves.length) return false;
-  const waveDef = g.mode.waves[g.wave];
+  if (g.waveActive || !hasMoreWaves(g.mode, g.wave)) return false;
+  const waveDef = getWaveDef(g.mode, g.wave, g.city);
+  if (!waveDef) return false;
   g.spawnQueue = flatWave(waveDef);
   g.spawnTimer = 0;
   g.waveActive = true;
@@ -80,11 +82,11 @@ export function update(g) {
     g.trivogaCooldown = 0; // Reset Тривога cooldown between waves
     addLog(g, `${getWaveCompleteQuip()} +${bonus}💰`);
     // Intel: show approximate composition of next wave
-    if (g.wave < g.mode.waves.length) {
+    if (hasMoreWaves(g.mode, g.wave)) {
       setTimeout(() => {
         addLog(g, getIntelQuip());
         // Show fuzzy enemy count breakdown
-        const next = g.mode.waves[g.wave];
+        const next = getWaveDef(g.mode, g.wave, g.city);
         if (next) {
           const isHell = g.mode.iskander.interval[0] < 600;
           const fuzz = isHell ? 0.4 : 0.2;
@@ -99,7 +101,7 @@ export function update(g) {
       }, 1500);
     }
     playWaveComplete();
-    if (g.wave >= g.mode.waves.length) return 'won';
+    if (!hasMoreWaves(g.mode, g.wave)) return 'won';
   }
 
   // Reveal stealth enemies near towers (detection range ~120px)

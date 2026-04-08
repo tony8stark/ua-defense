@@ -16,11 +16,11 @@ export function drawTerrain(ctx, g) {
 
   // Draw terrain tiles (elevation, bunker)
   if (city.terrainTiles) {
-    drawTerrainTiles(ctx, city.terrainTiles, t);
+    drawTerrainTiles(ctx, city.terrainTiles);
   }
 }
 
-function drawTerrainTiles(ctx, tiles, t) {
+function drawTerrainTiles(ctx, tiles) {
   for (const tile of tiles) {
     ctx.save();
     if (tile.type === 'elevation') {

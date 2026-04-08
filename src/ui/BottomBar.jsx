@@ -1,9 +1,12 @@
 import { DEF_META, getCost } from '../data/units.js';
+import { getFiniteWaveCount, isEndlessMode } from '../game/waves.js';
 
 const UNIT_ORDER = ['turret', 'mvg', 'crew', 'airfield', 'hawk', 'gepard', 'irist', 'decoy'];
 
 export default function BottomBar({ mode, selected, onSelect, counts, waveActive, wave, onStartWave, spd, onToggleSpeed, trivogaActive, trivogaCooldown, onTrivoga }) {
-  const totalWaves = mode.waves.length;
+  const endless = isEndlessMode(mode);
+  const totalWaves = getFiniteWaveCount(mode);
+  const campaignFinished = !endless && wave >= totalWaves;
 
   return (
     <div style={{ marginTop: 4, marginBottom: 2, width: '100%' }}>
@@ -51,7 +54,7 @@ export default function BottomBar({ mode, selected, onSelect, counts, waveActive
       <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
         <button
           onClick={onStartWave}
-          disabled={waveActive || wave >= totalWaves}
+          disabled={waveActive || campaignFinished}
           style={{
             background: waveActive ? '#0e1620' : 'linear-gradient(135deg, #ef4444, #dc2626)',
             color: waveActive ? '#64748b' : '#fff',
@@ -67,7 +70,7 @@ export default function BottomBar({ mode, selected, onSelect, counts, waveActive
             minHeight: 44,
           }}
         >
-          {waveActive ? '⏳ Атака...' : wave >= totalWaves ? '✅ Перемога' : '🚀 Хвиля!'}
+          {waveActive ? '⏳ Атака...' : campaignFinished ? '✅ Перемога' : (endless && wave > 0 ? '🚀 Далі' : '🚀 Хвиля!')}
         </button>
 
         {/* Тривога! active ability */}

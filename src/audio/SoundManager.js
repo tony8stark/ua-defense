@@ -25,13 +25,21 @@ function out() {
 export function setVolume(v) {
   _volume = v;
   if (masterGain) masterGain.gain.value = _muted ? 0 : v;
-  try { localStorage.setItem('ua-vol', v); } catch {}
+  try {
+    localStorage.setItem('ua-vol', v);
+  } catch {
+    // Ignore storage failures and keep audio controls functional.
+  }
 }
 
 export function setMuted(m) {
   _muted = m;
   if (masterGain) masterGain.gain.value = m ? 0 : _volume;
-  try { localStorage.setItem('ua-muted', m ? '1' : '0'); } catch {}
+  try {
+    localStorage.setItem('ua-muted', m ? '1' : '0');
+  } catch {
+    // Ignore storage failures and keep audio controls functional.
+  }
 }
 
 export function isMuted() { return _muted; }
@@ -42,7 +50,9 @@ try {
   const sv = localStorage.getItem('ua-vol');
   if (sv !== null) _volume = parseFloat(sv);
   _muted = localStorage.getItem('ua-muted') === '1';
-} catch {}
+} catch {
+  // Ignore storage failures and fall back to in-memory defaults.
+}
 
 // Resume audio context on first user interaction
 export function resumeOnInteraction() {

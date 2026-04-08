@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchLeaderboard } from '../lib/supabase.js';
+import { decodeLeaderboardScore, isEndlessDifficulty, sortLeaderboardEntries } from '../lib/leaderboard.js';
 import { CITIES } from '../data/cities.js';
 import { MODES } from '../data/difficulty.js';
 
@@ -10,9 +11,11 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
   const [filterDiff, setFilterDiff] = useState(highlightDifficulty || '');
 
   useEffect(() => {
-    setLoading(true);
     fetchLeaderboard(filterCity || null, filterDiff || null)
-      .then(data => { setEntries(data); setLoading(false); })
+      .then(data => {
+        setEntries(sortLeaderboardEntries(data, filterDiff || null));
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [filterCity, filterDiff]);
 
@@ -28,13 +31,13 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <select value={filterCity} onChange={e => setFilterCity(e.target.value)} style={selectStyle}>
+        <select value={filterCity} onChange={e => { setLoading(true); setFilterCity(e.target.value); }} style={selectStyle}>
           <option value="">Всі міста</option>
           {Object.values(CITIES).map(c => (
             <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
           ))}
         </select>
-        <select value={filterDiff} onChange={e => setFilterDiff(e.target.value)} style={selectStyle}>
+        <select value={filterDiff} onChange={e => { setLoading(true); setFilterDiff(e.target.value); }} style={selectStyle}>
           <option value="">Всі складності</option>
           {Object.entries(MODES).map(([k, m]) => (
             <option key={k} value={k}>{m.label}</option>
@@ -56,6 +59,8 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
             const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#475569';
             const cityObj = CITIES[e.city];
             const modeObj = MODES[e.difficulty];
+            const endless = isEndlessDifficulty(e.difficulty);
+            const scoreView = decodeLeaderboardScore(e);
 
             return (
               <div key={e.id} style={{
@@ -91,10 +96,12 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
                     fontSize: isTop3 ? fontSize : 14,
                     fontWeight: 900, color: '#fbbf24',
                   }}>
-                    {e.score}
+                    {endless ? `🌊${scoreView.primary}` : scoreView.primary}
                   </div>
                   <div className="font-mono" style={{ fontSize: 11, color: '#64748b' }}>
-                    💀{e.total_spawned ? `${e.kills}/${e.total_spawned}` : e.kills} 🌊{e.waves_survived}
+                    {endless
+                      ? `🏅${scoreView.secondary} · 💀${e.total_spawned ? `${e.kills}/${e.total_spawned}` : e.kills}`
+                      : `💀${e.total_spawned ? `${e.kills}/${e.total_spawned}` : e.kills} 🌊${e.waves_survived}`}
                   </div>
                 </div>
               </div>

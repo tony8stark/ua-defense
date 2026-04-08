@@ -1,6 +1,6 @@
-import { DEF_META, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from '../data/units.js';
+import { DEF_META, UPGRADES, getUpgradeCost, getSellPrice, getRepairCost } from '../data/units.js';
 
-export default function ContextMenu({ target, money, waveActive, onSell, onUpgrade, onRepair, onClose }) {
+export default function ContextMenu({ target, money, waveActive, repairDiscount = 0, onSell, onUpgrade, onRepair, onClose }) {
   if (!target) return null;
 
   const isTower = target.type === 'tower';
@@ -30,7 +30,7 @@ export default function ContextMenu({ target, money, waveActive, onSell, onUpgra
           backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
           {isTower && <TowerMenu item={item} money={money} waveActive={waveActive} onSell={onSell} onUpgrade={onUpgrade} />}
-          {isBuilding && <BuildingMenu item={item} money={money} waveActive={waveActive} onRepair={onRepair} />}
+          {isBuilding && <BuildingMenu item={item} money={money} waveActive={waveActive} repairDiscount={repairDiscount} onRepair={onRepair} />}
         </div>
       </div>
     </div>
@@ -98,10 +98,10 @@ function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
   );
 }
 
-function BuildingMenu({ item, money, waveActive, onRepair }) {
+function BuildingMenu({ item, money, waveActive, repairDiscount, onRepair }) {
   const damaged = item.hp < item.maxHp && item.hp > 0;
   const repairAmount = item.maxHp - item.hp;
-  const repairCost = Math.round(repairAmount * REPAIR_COST_PER_HP);
+  const repairCost = getRepairCost(item, { repairDiscount });
 
   return (
     <div>

@@ -1,12 +1,12 @@
 // Core math/physics utilities
+import { getWaveProgressRatio } from './waves.js';
 
 export const BASE_TICK = 0.55;
 export let TICK = BASE_TICK;
 
 // Slow down on late waves when lots of enemies on screen
 export function updateTick(g) {
-  const totalWaves = g.mode.waves.length;
-  const progress = g.wave / totalWaves; // 0..1
+  const progress = getWaveProgressRatio(g.mode, g.wave); // 0..1
   const enemyCount = g.enemies.length;
 
   // Late waves (past 60%) with many enemies: slow down

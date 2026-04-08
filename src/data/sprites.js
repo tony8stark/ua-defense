@@ -2,13 +2,23 @@
 // Each sprite is a simple geometric icon at 32x32, cached on first use
 
 const cache = new Map();
+const shahedPngUrl = new URL('../../sprites-png/shahed.png', import.meta.url).href;
+const lancetPngUrl = new URL('../../sprites-png/lancet.png', import.meta.url).href;
 
-function svgToImage(svg, size = 32) {
+function svgToImage(svg) {
   const key = svg;
   if (cache.has(key)) return cache.get(key);
   const img = new Image();
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   cache.set(key, img);
+  return img;
+}
+
+function urlToImage(url) {
+  if (cache.has(url)) return cache.get(url);
+  const img = new Image();
+  img.src = url;
+  cache.set(url, img);
   return img;
 }
 
@@ -73,11 +83,7 @@ export const TOWER_SPRITES = {
 // === ENEMIES ===
 
 export const ENEMY_SPRITES = {
-  shahed: svgToImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-    <path d="M28 16 L8 10 L12 16 L8 22 Z" fill="#94a3b8"/>
-    <path d="M10 12 L4 8 L6 14 Z" fill="#94a3b888"/>
-    <path d="M10 20 L4 24 L6 18 Z" fill="#94a3b888"/>
-  </svg>`),
+  shahed: urlToImage(shahedPngUrl),
 
   shahed238: svgToImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
     <path d="M28 16 L10 10 L14 16 L10 22 Z" fill="#fbbf24"/>
@@ -92,12 +98,7 @@ export const ENEMY_SPRITES = {
     <path d="M11 19 L6 22 L8 17 Z" fill="#cbd5e188"/>
   </svg>`),
 
-  lancet: svgToImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-    <path d="M28 16 L14 12 L16 16 L14 20 Z" fill="#f87171"/>
-    <path d="M14 13 L6 10 L10 15 Z" fill="#f8717188"/>
-    <path d="M14 19 L6 22 L10 17 Z" fill="#f8717188"/>
-    <circle cx="26" cy="16" r="2" fill="#ff0000"/>
-  </svg>`),
+  lancet: urlToImage(lancetPngUrl),
 
   guided: svgToImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
     <path d="M28 16 L8 8 L12 16 L8 24 Z" fill="#ff6b6b"/>

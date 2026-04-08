@@ -1,9 +1,7 @@
-import { MODES } from '../data/difficulty.js';
 import { isMuted, setMuted, resumeOnInteraction } from '../audio/SoundManager.js';
 import { useState } from 'react';
 
-export default function GameHUD({ money, killed, score, wave, waveActive, totalWaves, difficulty, buildings, bHp, weather, ewActive }) {
-  const m = MODES[difficulty];
+export default function GameHUD({ money, killed, wave, waveActive, totalWaves, buildings, bHp, weather, ewActive }) {
   const [muted, _setMuted] = useState(isMuted());
 
   const toggleMute = () => {

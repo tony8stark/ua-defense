@@ -2,6 +2,11 @@
 import { uid, resetIds, rnd } from './physics.js';
 import { resetCallsigns } from '../data/callsigns.js';
 import { rollWeather } from './events.js';
+import { DEF_META } from '../data/units.js';
+
+function createByTypeMap() {
+  return Object.fromEntries(Object.keys(DEF_META).map(type => [type, 0]));
+}
 
 export function createGameState(city, mode) {
   resetIds();
@@ -75,6 +80,17 @@ export function createGameState(city, mode) {
     patriotAnim: null,
     // Civilian damage
     civilianHits: 0,
+    // Balance telemetry / economy tracking
+    economy: {
+      totalSpent: 0,
+      totalRefund: 0,
+      repairSpent: 0,
+      spentByType: createByTypeMap(),
+      purchaseSpentByType: createByTypeMap(),
+      upgradeSpentByType: createByTypeMap(),
+      refundByType: createByTypeMap(),
+      repairByBuilding: {},
+    },
   };
 }
 
@@ -122,6 +138,14 @@ export function registerUnit(g, tower) {
   });
 }
 
+export function recordUnitKill(g, towerId) {
+  const liveTower = g.towers.find(t => t.id === towerId);
+  if (liveTower) liveTower.kills = (liveTower.kills || 0) + 1;
+
+  const entry = g.unitRoster.find(u => u.id === towerId);
+  if (entry) entry.kills = (entry.kills || 0) + 1;
+}
+
 // Mark a unit as destroyed in roster
 export function markUnitDestroyed(g, towerId) {
   const entry = g.unitRoster.find(u => u.id === towerId);
@@ -146,6 +170,72 @@ export function syncRosterKills(g) {
 export function getFinalRoster(g) {
   syncRosterKills(g);
   return g.unitRoster.map(u => ({ ...u }));
+}
+
+export function trackUnitSpend(g, type, amount, reason = 'purchase') {
+  if (!g.economy || amount <= 0) return;
+  g.economy.totalSpent += amount;
+  g.economy.spentByType[type] = (g.economy.spentByType[type] || 0) + amount;
+
+  if (reason === 'upgrade') {
+    g.economy.upgradeSpentByType[type] = (g.economy.upgradeSpentByType[type] || 0) + amount;
+  } else {
+    g.economy.purchaseSpentByType[type] = (g.economy.purchaseSpentByType[type] || 0) + amount;
+  }
+}
+
+export function trackUnitRefund(g, type, amount) {
+  if (!g.economy || amount <= 0) return;
+  g.economy.totalRefund += amount;
+  g.economy.refundByType[type] = (g.economy.refundByType[type] || 0) + amount;
+}
+
+export function trackRepairSpend(g, buildingKey, amount) {
+  if (!g.economy || amount <= 0) return;
+  g.economy.repairSpent += amount;
+  g.economy.repairByBuilding[buildingKey] = (g.economy.repairByBuilding[buildingKey] || 0) + amount;
+}
+
+export function getBalanceTelemetry(g) {
+  syncRosterKills(g);
+
+  const byType = Object.fromEntries(Object.keys(DEF_META).map(type => {
+    const units = g.unitRoster.filter(unit => unit.type === type);
+    const kills = units.reduce((sum, unit) => sum + (unit.kills || 0), 0);
+    const spent = g.economy?.spentByType?.[type] || 0;
+    const refunded = g.economy?.refundByType?.[type] || 0;
+    const netSpend = spent - refunded;
+
+    return [type, {
+      type,
+      placed: units.length,
+      alive: units.filter(unit => unit.alive).length,
+      sold: units.filter(unit => unit.soldByPlayer).length,
+      destroyed: units.filter(unit => !unit.alive && !unit.soldByPlayer).length,
+      kills,
+      spent,
+      refunded,
+      netSpend,
+      spendPerKill: kills > 0 ? Math.round(netSpend / kills) : null,
+    }];
+  }));
+
+  return {
+    economy: {
+      totalSpent: g.economy?.totalSpent || 0,
+      totalRefund: g.economy?.totalRefund || 0,
+      repairSpent: g.economy?.repairSpent || 0,
+      netSpent: (g.economy?.totalSpent || 0) + (g.economy?.repairSpent || 0) - (g.economy?.totalRefund || 0),
+      purchaseSpentByType: { ...(g.economy?.purchaseSpentByType || {}) },
+      upgradeSpentByType: { ...(g.economy?.upgradeSpentByType || {}) },
+      repairByBuilding: { ...(g.economy?.repairByBuilding || {}) },
+    },
+    byType,
+    civilianHits: g.civilianHits || 0,
+    orlanEscapes: g.orlanEscapes || 0,
+    trivogaUses: g.trivogaUses || 0,
+    patriotInterceptions: g.patriotInterceptions || 0,
+  };
 }
 
 // Compute active building bonuses (only from alive buildings)

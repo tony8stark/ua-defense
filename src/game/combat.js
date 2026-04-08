@@ -1,7 +1,7 @@
 // Combat system: towers firing, projectiles, FPV drones
 import { TICK, dist, ang, rnd, chance, uid } from './physics.js';
 import { DEF_META } from '../data/units.js';
-import { addLog, registerKill, getTrivogaFireRateMul, getBuildingBonuses } from './state.js';
+import { addLog, registerKill, recordUnitKill, getTrivogaFireRateMul, getBuildingBonuses } from './state.js';
 import { getEWMultipliers } from './events.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 import { getKillQuip } from '../data/battleQuips.js';
@@ -198,8 +198,7 @@ export function updateCombat(g) {
             registerKill(g, tgt.reward, tgt.x, tgt.y);
             playExplosion(false);
             // Credit kill to tower
-            const src = p.sourceTowerId ? g.towers.find(t => t.id === p.sourceTowerId) : null;
-            if (src) src.kills = (src.kills || 0) + 1;
+            if (p.sourceTowerId) recordUnitKill(g, p.sourceTowerId);
             // Random kill quip
             const quip = getKillQuip(tgt.type);
             if (quip) addLog(g, quip);
@@ -270,10 +269,7 @@ export function updateCombat(g) {
           if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
           registerKill(g, tgt.reward, tgt.x, tgt.y);
           // Credit kill to crew tower
-          if (fd.sourceTowerId) {
-            const src = g.towers.find(t => t.id === fd.sourceTowerId);
-            if (src) src.kills = (src.kills || 0) + 1;
-          }
+          if (fd.sourceTowerId) recordUnitKill(g, fd.sourceTowerId);
           const quip = getKillQuip(tgt.type);
           if (quip) addLog(g, quip);
           g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });

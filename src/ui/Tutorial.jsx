@@ -1,5 +1,6 @@
 // Interactive tutorial overlay — shown on first game
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { markTutorialSeen } from './tutorialStorage.js';
 
 const STEPS = [
   {
@@ -33,7 +34,7 @@ const STEPS = [
       '🛫 Аеродром — кукурузник на патрулюванні',
       '🦅 HAWK — висока точність по повільних цілях (Шахед, Геран)',
       '🐆 Gepard — швидкострільна зенітка ближнього бою',
-      '💎 IRIS-T — одна ракета, гарантоване знищення будь-якої цілі',
+      '💎 IRIS-T — одна ракета, майже гарантоване знищення важкої цілі',
       '🪤 Хибна ціль — відволікає Іскандер та керовані дрони',
     ],
   },
@@ -54,34 +55,24 @@ const STEPS = [
   },
 ];
 
-const STORAGE_KEY = 'ua-tutorial-seen';
-
-export function shouldShowTutorial() {
-  try { return !localStorage.getItem(STORAGE_KEY); } catch { return true; }
-}
-
-export function markTutorialSeen() {
-  try { localStorage.setItem(STORAGE_KEY, '1'); } catch {}
-}
-
 export default function Tutorial({ onClose }) {
   const [step, setStep] = useState(0);
   const s = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
-  const next = () => {
+  const next = useCallback(() => {
     if (isLast) {
       markTutorialSeen();
       onClose();
     } else {
-      setStep(step + 1);
+      setStep(currentStep => currentStep + 1);
     }
-  };
+  }, [isLast, onClose]);
 
-  const skip = () => {
+  const skip = useCallback(() => {
     markTutorialSeen();
     onClose();
-  };
+  }, [onClose]);
 
   // Keyboard
   useEffect(() => {
@@ -91,7 +82,7 @@ export default function Tutorial({ onClose }) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [step]);
+  }, [next, skip]);
 
   return (
     <div

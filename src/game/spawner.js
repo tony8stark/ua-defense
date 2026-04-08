@@ -2,8 +2,73 @@
 import { uid, rnd, chance } from './physics.js';
 import { ENEMY_COLORS, ENEMY_SIZES } from '../data/enemies.js';
 import { getSpawnPos, pickSpawnEdge } from '../data/cities.js';
+import { getEnemySpawnProfile } from './waves.js';
 
-// Flatten wave definition into shuffled list of enemy types
+const ENEMY_PRESSURE = {
+  shahed: 1,
+  geran: 1,
+  orlan: 2,
+  lancet: 2,
+  shahed238: 2,
+  guided: 3,
+  kalibr: 3,
+  kh101: 3,
+};
+
+const EARLY_CALM_WINDOW = 4;
+const MAX_SHOCK_STREAK_WITH_CALM = 2;
+
+function getEnemyPressure(type) {
+  return ENEMY_PRESSURE[type] || 2;
+}
+
+function isCalmType(type) {
+  return getEnemyPressure(type) <= 1;
+}
+
+function isShockType(type) {
+  return getEnemyPressure(type) >= 2;
+}
+
+function findNextIndex(list, start, predicate) {
+  for (let i = start; i < list.length; i++) {
+    if (predicate(list[i])) return i;
+  }
+  return -1;
+}
+
+function softenWaveOpener(list) {
+  const openerSize = Math.min(EARLY_CALM_WINDOW, list.length);
+  if (list.slice(0, openerSize).some(isCalmType)) return;
+
+  const calmerIndex = findNextIndex(list, openerSize, isCalmType);
+  if (calmerIndex === -1) return;
+
+  const insertAt = openerSize - 1;
+  [list[insertAt], list[calmerIndex]] = [list[calmerIndex], list[insertAt]];
+}
+
+function breakShockStreaks(list) {
+  let shockRun = 0;
+
+  for (let i = 0; i < list.length; i++) {
+    if (!isShockType(list[i])) {
+      shockRun = 0;
+      continue;
+    }
+
+    shockRun++;
+    if (shockRun <= MAX_SHOCK_STREAK_WITH_CALM) continue;
+
+    const calmerIndex = findNextIndex(list, i + 1, isCalmType);
+    if (calmerIndex === -1) continue;
+
+    [list[i], list[calmerIndex]] = [list[calmerIndex], list[i]];
+    shockRun = 0;
+  }
+}
+
+// Flatten wave definition into a chaotic list, then repair only the ugliest extremes
 export function flatWave(waveDef) {
   const list = [];
   for (const g of waveDef.en) {
@@ -14,6 +79,8 @@ export function flatWave(waveDef) {
     const j = Math.floor(Math.random() * (i + 1));
     [list[i], list[j]] = [list[j], list[i]];
   }
+  softenWaveOpener(list);
+  breakShockStreaks(list);
   return list;
 }
 
@@ -44,7 +111,7 @@ export function spawnEnemy(g, type) {
   // Kalibr only spawns on Odesa (sea-based cruise missile)
   if (type === 'kalibr' && g.city.id !== 'odesa') return;
 
-  const et = g.mode[type];
+  const et = getEnemySpawnProfile(g.mode, g.wave, type, g.mode[type]);
   if (!et) return; // guard: enemy type not defined for this difficulty
   const target = pickTarget(g, type);
   if (!target) return;

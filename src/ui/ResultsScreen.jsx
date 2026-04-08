@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { MODES } from '../data/difficulty.js';
 import { DEF_META } from '../data/units.js';
 import { submitScore } from '../lib/supabase.js';
+import { encodeLeaderboardScore } from '../lib/leaderboard.js';
+import { getWaveDisplayTotal, isEndlessMode } from '../game/waves.js';
 
 const ENEMY_META = {
   shahed: { name: 'Shahed-136', emoji: '🛩️', color: '#94a3b8' },
@@ -14,12 +16,18 @@ const ENEMY_META = {
   kh101: { name: 'Кх-101', emoji: '✈️', color: '#c084fc' },
 };
 
-export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, patriotInterceptions, bestCombo, onMenu, onLeaderboard }) {
+export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, patriotInterceptions, bestCombo, telemetry, onMenu, onLeaderboard }) {
   const m = MODES[difficulty];
+  const endless = isEndlessMode(m);
+  const waveTotalLabel = getWaveDisplayTotal(m);
   const survived = Object.values(bHp).filter(h => h > 0).length;
   const killRate = totalSpawned > 0 ? Math.round((killed / totalSpawned) * 100) : 0;
   const [name, setName] = useState(() => {
-    try { return localStorage.getItem('ua-player-name') || ''; } catch { return ''; }
+    try {
+      return localStorage.getItem('ua-player-name') || '';
+    } catch {
+      return '';
+    }
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,9 +35,18 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
   const handleSubmit = async () => {
     if (!name.trim() || name.length < 2 || name.length > 16) return;
     setSubmitting(true);
-    try { localStorage.setItem('ua-player-name', name.trim()); } catch {}
+    try {
+      localStorage.setItem('ua-player-name', name.trim());
+    } catch {
+      // Ignore storage failures and continue with score submission.
+    }
     const ok = await submitScore({
-      name: name.trim(), score, city: cityId, difficulty, wavesSurvived: wave, kills: killed,
+      name: name.trim(),
+      score: encodeLeaderboardScore({ difficulty, score, wavesSurvived: wave }),
+      city: cityId,
+      difficulty,
+      wavesSurvived: wave,
+      kills: killed,
       totalSpawned: totalSpawned || 0,
     });
     setSubmitting(false);
@@ -45,11 +62,18 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
   const totalUnits = sortedRoster.length;
   const destroyedUnits = sortedRoster.filter(u => !u.alive && !u.soldByPlayer).length;
   const soldUnits = sortedRoster.filter(u => u.soldByPlayer).length;
+  const resultIcon = phase === 'won' ? '🇺🇦' : endless ? '☠️' : '💥';
+  const resultColor = phase === 'won' ? '#4ade80' : endless ? '#fb7185' : '#ef4444';
+  const resultTitle = phase === 'won' ? 'Перемога!' : endless ? 'Kobayashi Maru' : 'Інфраструктуру знищено';
 
   // Build enemy breakdown (only types that actually spawned)
   const enemyBreakdown = spawnedByType ? Object.entries(spawnedByType)
     .filter(([, n]) => n > 0)
     .sort(([, a], [, b]) => b - a) : [];
+  const economy = telemetry?.economy || null;
+  const unitEconomy = telemetry ? Object.values(telemetry.byType)
+    .filter(entry => entry.placed > 0)
+    .sort((a, b) => (b.kills - a.kills) || (b.netSpend - a.netSpend)) : [];
 
   return (
     <div style={{
@@ -59,12 +83,12 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>{phase === 'won' ? '🇺🇦' : '💥'}</div>
+        <div style={{ fontSize: 48, marginBottom: 8 }}>{resultIcon}</div>
         <h1 style={{
           fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2,
-          color: phase === 'won' ? '#4ade80' : '#ef4444',
+          color: resultColor,
         }}>
-          {phase === 'won' ? 'Перемога!' : 'Інфраструктуру знищено'}
+          {resultTitle}
         </h1>
         <div style={{ fontSize: 12, marginTop: 4, color: m?.color }}>{m?.label}</div>
       </div>
@@ -75,7 +99,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
           { label: 'Рахунок', value: score, color: '#fbbf24' },
           { label: 'Збито', value: totalSpawned > 0 ? `${killed}/${totalSpawned}` : killed, color: '#ef4444' },
           { label: '% збиття', value: `${killRate}%`, color: killRate >= 80 ? '#4ade80' : killRate >= 50 ? '#f59e0b' : '#ef4444' },
-          { label: 'Хвилі', value: `${wave}/${m?.waves.length || 0}`, color: '#a78bfa' },
+          { label: 'Хвилі', value: `${wave}/${waveTotalLabel}`, color: '#a78bfa' },
           { label: "Об'єкти", value: `${survived}/5`, color: '#4ade80' },
           ...(patriotInterceptions > 0 ? [{ label: 'Patriot', value: patriotInterceptions, color: '#60a5fa' }] : []),
           ...(bestCombo >= 3 ? [{ label: 'Серія', value: `x${bestCombo}`, color: '#f59e0b' }] : []),
@@ -86,6 +110,62 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
           </div>
         ))}
       </div>
+
+      {economy && (
+        <div style={{
+          width: '100%', maxWidth: 480, marginBottom: 16,
+          background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            Логістика
+          </div>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Закупівлі', value: economy.totalSpent, color: '#fbbf24' },
+              { label: 'Ремонт', value: economy.repairSpent, color: '#38bdf8' },
+              { label: 'Повернуто', value: economy.totalRefund, color: '#4ade80' },
+              { label: 'Нетто', value: economy.netSpent, color: '#f87171' },
+              { label: 'Цивільні', value: telemetry.civilianHits, color: telemetry.civilianHits > 0 ? '#ef4444' : '#64748b' },
+            ].map(item => (
+              <div key={item.label} style={{ minWidth: 72 }}>
+                <div className="font-mono" style={{ fontSize: 18, fontWeight: 900, color: item.color }}>{item.value}</div>
+                <div style={{ fontSize: 11, color: '#64748b' }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {unitEconomy.length > 0 && (
+        <div style={{
+          width: '100%', maxWidth: 480, marginBottom: 16,
+          background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            Ефективність засобів
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {unitEconomy.map(entry => {
+              const meta = DEF_META[entry.type];
+              return (
+                <div key={entry.type} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 18, textAlign: 'center', flexShrink: 0 }}>{meta?.emoji}</span>
+                  <span style={{ minWidth: 88, fontSize: 12, color: meta?.color || '#e2e8f0' }}>{meta?.name}</span>
+                  <span className="font-mono" style={{ fontSize: 11, color: '#fbbf24', minWidth: 54 }}>
+                    💀{entry.kills}
+                  </span>
+                  <span className="font-mono" style={{ fontSize: 11, color: '#94a3b8', minWidth: 56 }}>
+                    💰{entry.netSpend}
+                  </span>
+                  <span className="font-mono" style={{ fontSize: 11, color: '#64748b', marginLeft: 'auto' }}>
+                    {entry.placed} шт · {entry.destroyed} втрат{entry.sold > 0 ? ` · ${entry.sold} прод.` : ''}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Enemy breakdown */}
       {enemyBreakdown.length > 0 && (

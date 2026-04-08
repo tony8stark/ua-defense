@@ -5,6 +5,7 @@ import { playJetFlyby, playEWBuzz } from '../audio/SoundManager.js';
 import { getF16Quip, getEWQuip } from '../data/battleQuips.js';
 import { ENEMY_COLORS, ENEMY_SIZES } from '../data/enemies.js';
 import { getSpawnPos, pickSpawnEdge } from '../data/cities.js';
+import { getEnemySpawnProfile } from './waves.js';
 
 // ====== F-16 VIPER ======
 
@@ -221,7 +222,7 @@ export function getEWMultipliers(g) {
 
 export function trySpawnKh101(g) {
   if (g.wave < 5) return;
-  const cfg = g.mode.kh101;
+  const cfg = getEnemySpawnProfile(g.mode, g.wave, 'kh101', g.mode.kh101);
   if (!cfg) return;
   if (Math.random() > cfg.spawnChance) return;
   // Don't overlap with F-16 (both are flyby events)
@@ -270,7 +271,7 @@ function pickKh101Target(g) {
 
 export function trySpawnOrlan(g) {
   if (g.wave < 2) return; // not on first 2 waves
-  const orlanCfg = g.mode.orlan;
+  const orlanCfg = getEnemySpawnProfile(g.mode, g.wave, 'orlan', g.mode.orlan);
   if (!orlanCfg) return;
   if (Math.random() > orlanCfg.spawnChance) return;
 

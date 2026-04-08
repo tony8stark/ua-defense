@@ -1,6 +1,7 @@
 import { MODES } from '../data/difficulty.js';
+import { getWaveDisplayTotal, isEndlessMode } from '../game/waves.js';
 
-export default function DifficultySelect({ cityId, onSelect, onBack }) {
+export default function DifficultySelect({ onSelect, onBack }) {
   return (
     <div style={{
       minHeight: '100dvh', display: 'flex', alignItems: 'safe center', justifyContent: 'center',
@@ -40,7 +41,7 @@ export default function DifficultySelect({ cityId, onSelect, onBack }) {
               <div style={{ fontSize: 13, lineHeight: 1.5, color: '#cbd5e1', marginBottom: 8 }}>{m.desc}</div>
               <div className="font-mono" style={{ fontSize: 11, lineHeight: 1.8, color: '#94a3b8' }}>
                 <div>🔫 {Math.round(m.turret.hitChance * 100)}% · 🎮 {Math.round(m.crew.hitChance * 100)}% · 🛫 {Math.round(m.airfield.hitChance * 100)}%</div>
-                <div>💀 HP:{m.shahed.hp} · 🌊 {m.waves.length} хвиль</div>
+                <div>💀 HP:{m.shahed.hp} · 🌊 {isEndlessMode(m) ? '∞ режим' : `${getWaveDisplayTotal(m)} хвиль`}</div>
               </div>
             </button>
           ))}

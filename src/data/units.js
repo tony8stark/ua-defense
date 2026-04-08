@@ -69,3 +69,26 @@ export function getSellPrice(tower) {
 }
 
 export const REPAIR_COST_PER_HP = 1.5; // 1.5 coins per HP (expensive, Hospital discount can halve)
+
+export function getRepairCost(building, bonuses = {}) {
+  const repairAmount = Math.max(0, (building.maxHp || 0) - (building.hp || 0));
+  const repairDiscount = bonuses.repairDiscount || 0;
+  return Math.round(repairAmount * REPAIR_COST_PER_HP * (1 - repairDiscount));
+}
+
+export function getUnitBalanceScore(mode, unitType, options = {}) {
+  const unit = mode[unitType];
+  if (!unit) return 0;
+
+  let damage = unit.damage ?? 0;
+  let hitChance = unit.hitChance ?? 1;
+  let burstCount = 1;
+
+  if (unitType === 'gepard') burstCount = 2;
+  if (unitType === 'crew') hitChance *= (1 - (unit.lossChance ?? 0));
+  if (unitType === 'irist') damage = Math.min(damage, 260);
+  if (options.antiFast && unitType === 'mvg') hitChance += 0.15;
+
+  const expectedDps = damage * hitChance * burstCount / (unit.fireRate || 1);
+  return Number(((expectedDps / unit.baseCost) * 100).toFixed(3));
+}

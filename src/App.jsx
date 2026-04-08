@@ -1,14 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { CITIES, GRID, getCityConfig } from './data/cities.js';
+import { GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
-import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, REPAIR_COST_PER_HP } from './data/units.js';
+import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, getRepairCost } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
-import { createGameState, getUIState, addLog, registerUnit, markUnitSold, getFinalRoster, activateTrivoga, getBuildingBonuses } from './game/state.js';
+import {
+  createGameState,
+  getUIState,
+  addLog,
+  registerUnit,
+  markUnitSold,
+  getFinalRoster,
+  getBalanceTelemetry,
+  trackUnitSpend,
+  trackUnitRefund,
+  trackRepairSpend,
+  activateTrivoga,
+  getBuildingBonuses,
+} from './game/state.js';
 import { getIskanderQuip } from './data/battleQuips.js';
 import { playSiren } from './audio/SoundManager.js';
 import { getCallsign } from './data/callsigns.js';
 import { playPlace, playSell, playGameOver, playWaveComplete, resumeOnInteraction } from './audio/SoundManager.js';
 import { update as gameUpdate, startWave as engineStartWave } from './game/engine.js';
+import { createTouchPressState, finishTouchPress } from './game/touch.js';
+import { getWaveDisplayTotal } from './game/waves.js';
 import { draw } from './game/renderer/index.js';
 import { screenToCanvas } from './hooks/useCanvasScale.js';
 import MainMenu from './ui/MainMenu.jsx';
@@ -20,7 +35,8 @@ import BottomBar from './ui/BottomBar.jsx';
 import ContextMenu from './ui/ContextMenu.jsx';
 import Leaderboard from './ui/Leaderboard.jsx';
 import TechPage from './ui/TechPage.jsx';
-import Tutorial, { shouldShowTutorial } from './ui/Tutorial.jsx';
+import Tutorial from './ui/Tutorial.jsx';
+import { shouldShowTutorial } from './ui/tutorialStorage.js';
 
 export default function App() {
   const [phase, setPhase] = useState('menu');
@@ -137,6 +153,7 @@ export default function App() {
 
     g.towers.push(tower);
     registerUnit(g, tower);
+    trackUnitSpend(g, sel, cost, 'purchase');
 
     if (sel === 'airfield') {
       g.kukurzniki.push({
@@ -189,24 +206,20 @@ export default function App() {
     if (!touch) return;
     const evt = { clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} };
 
-    // Long press = context menu (300ms)
-    touchTimer.current = setTimeout(() => {
-      touchTimer.current = null;
-      handleRightClick({ ...evt, preventDefault: () => {} });
-    }, 300);
-
-    // Store for short tap detection
-    touchTimer.current._evt = evt;
+    touchTimer.current = createTouchPressState(evt, {
+      delayMs: 300,
+      onLongPress(nextEvt) {
+        touchTimer.current = null;
+        handleRightClick({ ...nextEvt, preventDefault: () => {} });
+      },
+    });
   }, [handleRightClick]);
 
-  const handleTouchEnd = useCallback((e) => {
-    if (touchTimer.current) {
-      const evt = touchTimer.current._evt;
-      clearTimeout(touchTimer.current);
-      touchTimer.current = null;
-      // Short tap = normal click
-      if (evt) handleClick(evt);
-    }
+  const handleTouchEnd = useCallback(() => {
+    const state = touchTimer.current;
+    if (!state) return;
+    touchTimer.current = null;
+    finishTouchPress(state, { onTap: handleClick });
   }, [handleClick]);
 
   // === M3 ACTIONS ===
@@ -220,6 +233,7 @@ export default function App() {
     const price = getSellPrice(t);
     t.hp = 0;
     markUnitSold(g, t.id);
+    trackUnitRefund(g, t.type, price);
     if (t.type === 'airfield') {
       g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== t.id);
     }
@@ -257,6 +271,7 @@ export default function App() {
     t.level = nextLevel;
     t.hp = Math.min(t.hp + 20, t.maxHp); // small heal on upgrade
     g.money -= cost;
+    trackUnitSpend(g, t.type, cost, 'upgrade');
 
     // Update kukurznik stats if airfield
     if (t.type === 'airfield') {
@@ -279,14 +294,13 @@ export default function App() {
     if (!g || g.waveActive) return;
     const b = g.buildings.find(bl => bl.key === building.key);
     if (!b || b.hp <= 0 || b.hp >= b.maxHp) return;
-    const repairAmount = b.maxHp - b.hp;
     const bb = getBuildingBonuses(g);
-    const costPerHp = REPAIR_COST_PER_HP * (1 - bb.repairDiscount);
-    const cost = Math.round(repairAmount * costPerHp);
+    const cost = getRepairCost(b, bb);
     if (g.money < cost) return;
 
     b.hp = b.maxHp;
     g.money -= cost;
+    trackRepairSpend(g, b.key, cost);
     addLog(g, `🔧 ${b.name} відремонтовано (-${cost}💰)`);
     setCtxMenu(null);
     syncUI();
@@ -407,16 +421,16 @@ export default function App() {
   if (phase === 'tech') return <TechPage onBack={goMenu} />;
   if (phase === 'difficulty') return <DifficultySelect cityId={cityId} onSelect={selectDifficulty} onBack={goMenu} />;
   if (phase === 'won' || phase === 'lost') {
-    // Find MVP tower (most kills)
-    const g = gRef.current;
-    const mvp = g?.towers?.filter(t => (t.kills || 0) > 0).sort((a, b) => (b.kills || 0) - (a.kills || 0))[0] || null;
     const roster = gRef.current ? getFinalRoster(gRef.current) : [];
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} patriotInterceptions={ui.patriotInterceptions} bestCombo={ui.bestCombo} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
+    const telemetry = gRef.current ? getBalanceTelemetry(gRef.current) : null;
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} patriotInterceptions={ui.patriotInterceptions} bestCombo={ui.bestCombo} telemetry={telemetry} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
   // PLAYING
   const city = getCityConfig(cityId);
   const mode = MODES[difficulty];
+  const totalWaveLabel = getWaveDisplayTotal(mode);
+  const repairDiscount = gRef.current ? getBuildingBonuses(gRef.current).repairDiscount : 0;
   if (!city || !mode) return null;
 
   return (
@@ -428,7 +442,7 @@ export default function App() {
       <div style={{ width: '100%', flexShrink: 0 }}>
         <GameHUD
           money={ui.money} killed={ui.killed} score={ui.score}
-          wave={ui.wave} waveActive={ui.waveActive} totalWaves={mode.waves.length}
+          wave={ui.wave} waveActive={ui.waveActive} totalWaves={totalWaveLabel}
           difficulty={difficulty} buildings={city.buildings} bHp={ui.bHp}
           weather={ui.weather} ewActive={ui.ewActive}
         />
@@ -447,6 +461,7 @@ export default function App() {
             onMouseLeave={() => { hoverRef.current = null; }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => { touchTimer.current = null; }}
             className="rounded-lg"
             style={{
               border: '1px solid #1e293b',
@@ -500,6 +515,7 @@ export default function App() {
         target={ctxMenu}
         money={ui.money}
         waveActive={ui.waveActive}
+        repairDiscount={repairDiscount}
         onSell={handleSell}
         onUpgrade={handleUpgrade}
         onRepair={handleRepair}
