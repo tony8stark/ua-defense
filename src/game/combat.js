@@ -11,37 +11,70 @@ export function updateCombat(g) {
   const ew = getEWMultipliers(g);
   const weather = g.weather?.effects || {};
 
-  // TURRETS & CREWS
+  // TURRETS, CREWS, HAWK, GEPARD, IRIS-T
+  const SLOW_SPEED_THRESHOLD = 1.5; // HAWK only targets enemies slower than this
+
   for (const tw of g.towers) {
     if (tw.hp <= 0) {
       tw.deathTimer = (tw.deathTimer || 30) - 1;
       continue;
     }
-    if (tw.type === 'airfield') continue;
+    if (tw.type === 'airfield' || tw.type === 'decoy') continue;
 
     tw.cooldown = Math.max(0, tw.cooldown - TICK);
     if (tw.cooldown > 0) continue;
 
+    // Find target based on tower type
     let closest = null, closestDist = Infinity;
-    const skipJet = tw.type === 'crew';
     const effectiveRange = tw.range * (weather.rangeMul || 1);
     for (const en of g.enemies) {
-      if (skipJet && en.type === 'shahed238') continue;
+      // Crew skips Shahed-238
+      if (tw.type === 'crew' && en.type === 'shahed238') continue;
+      // HAWK only targets slow enemies (Shahed, Geran, Kalibr, Orlan, Kh-101)
+      if (tw.type === 'hawk' && en.speed >= SLOW_SPEED_THRESHOLD) continue;
+      // IRIS-T targets highest HP enemy in range (not nearest)
       const d = dist(tw, en);
-      if (d < effectiveRange && d < closestDist) { closest = en; closestDist = d; }
+      if (d < effectiveRange) {
+        if (tw.type === 'irist') {
+          if (!closest || en.hp > closest.hp) { closest = en; closestDist = d; }
+        } else {
+          if (d < closestDist) { closest = en; closestDist = d; }
+        }
+      }
     }
     if (!closest) continue;
 
     tw.angle = ang(tw, closest);
     tw.cooldown = tw.fireRate;
 
-    if (tw.type === 'turret') {
-      if (g.tick % 3 === 0) playShoot(); // throttle sound
+    if (tw.type === 'turret' || tw.type === 'hawk') {
+      if (g.tick % 3 === 0) playShoot();
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
-        damage: tw.damage, speed: 7, color: DEF_META.turret.color,
+        damage: tw.damage, speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
         id: uid(), hitChance: tw.hitChance * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
         sourceTowerId: tw.id,
+      });
+    } else if (tw.type === 'gepard') {
+      // Gepard: rapid burst, 2 projectiles per shot
+      playShoot();
+      for (let i = 0; i < 2; i++) {
+        g.projectiles.push({
+          x: tw.x + rnd(-3, 3), y: tw.y + rnd(-3, 3),
+          tid: closest.id, tx: closest.x + rnd(-5, 5), ty: closest.y + rnd(-5, 5),
+          damage: tw.damage, speed: 9, color: DEF_META.gepard.color,
+          id: uid(), hitChance: tw.hitChance * (weather.accuracyMul || 1),
+          sourceTowerId: tw.id,
+        });
+      }
+    } else if (tw.type === 'irist') {
+      // IRIS-T: single guaranteed-kill missile
+      playFPVLaunch(); // reuse whoosh sound
+      g.projectiles.push({
+        x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
+        damage: tw.damage, speed: 10, color: DEF_META.irist.color,
+        id: uid(), hitChance: tw.hitChance,
+        sourceTowerId: tw.id, isIRIST: true,
       });
     } else if (tw.type === 'crew') {
       if (chance((tw.lossChanceOverride ?? m.crew.lossChance) * ew.fpvLossMul)) {

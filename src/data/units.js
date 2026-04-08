@@ -3,6 +3,9 @@ export const DEF_META = {
   turret: { name: 'ЗУ Турель', color: '#4ade80', emoji: '🔫' },
   crew: { name: 'Екіпаж FPV', color: '#38bdf8', emoji: '🎮' },
   airfield: { name: 'Аеродром', color: '#f59e0b', emoji: '🛫' },
+  hawk: { name: 'HAWK', color: '#a3e635', emoji: '🦅' },
+  gepard: { name: 'Gepard', color: '#fb923c', emoji: '🐆' },
+  irist: { name: 'IRIS-T', color: '#e879f9', emoji: '💎' },
   decoy: { name: 'Хибна ціль', color: '#94a3b8', emoji: '🪤' },
 };
 
@@ -23,6 +26,21 @@ export const UPGRADES = {
     { label: 'Рівень 1', costMul: 0, stats: {} },
     { label: 'Рівень 2', costMul: 0.8, stats: { range: 1.25, damage: 1.2 }, desc: '+25% дальність, +20% урон' },
     { label: 'Рівень 3', costMul: 1.2, stats: { range: 1.4, damage: 1.4, hitChance: 1.3 }, desc: '+40% дальн, +40% урон, +30% точність' },
+  ],
+  hawk: [
+    { label: 'Рівень 1', costMul: 0, stats: {} },
+    { label: 'Рівень 2', costMul: 0.7, stats: { damage: 1.3, hitChance: 1.1 }, desc: '+30% урон, +10% точність' },
+    { label: 'Рівень 3', costMul: 1.0, stats: { damage: 1.5, range: 1.2, hitChance: 1.15 }, desc: '+50% урон, +20% дальн, +15% точність' },
+  ],
+  gepard: [
+    { label: 'Рівень 1', costMul: 0, stats: {} },
+    { label: 'Рівень 2', costMul: 0.7, stats: { range: 1.15, damage: 1.2 }, desc: '+15% дальність, +20% урон' },
+    { label: 'Рівень 3', costMul: 1.0, stats: { range: 1.25, damage: 1.4, fireRate: 0.85 }, desc: '+25% дальн, +40% урон, швидше' },
+  ],
+  irist: [
+    { label: 'Рівень 1', costMul: 0, stats: {} },
+    { label: 'Рівень 2', costMul: 1.0, stats: { fireRate: 0.8, range: 1.15 }, desc: '-20% перезарядка, +15% дальність' },
+    { label: 'Рівень 3', costMul: 1.5, stats: { fireRate: 0.65, range: 1.3 }, desc: '-35% перезарядка, +30% дальність' },
   ],
 };
 

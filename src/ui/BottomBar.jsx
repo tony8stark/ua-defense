@@ -1,14 +1,17 @@
 import { DEF_META, getCost } from '../data/units.js';
 
+const UNIT_ORDER = ['turret', 'crew', 'airfield', 'hawk', 'gepard', 'irist', 'decoy'];
+
 export default function BottomBar({ mode, selected, onSelect, counts, waveActive, wave, onStartWave, spd, onToggleSpeed }) {
   const totalWaves = mode.waves.length;
 
   return (
     <div style={{ marginTop: 4, marginBottom: 2, width: '100%' }}>
-      {/* Unit selection row */}
-      <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-        {['turret', 'crew', 'airfield', 'decoy'].map(key => {
+      {/* Unit selection row - horizontally scrollable */}
+      <div className="scroll-thin" style={{ display: 'flex', gap: 4, width: '100%', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+        {UNIT_ORDER.map(key => {
           const d = mode[key];
+          if (!d) return null; // guard: unit type not in this difficulty
           const meta = DEF_META[key];
           const c = counts[key] || 0;
           const cost = getCost(d.baseCost, mode.costEsc, c);
@@ -28,13 +31,13 @@ export default function BottomBar({ mode, selected, onSelect, counts, waveActive
                 padding: '6px 4px',
                 textAlign: 'center',
                 flex: '1 1 0%',
-                minWidth: 0,
+                minWidth: 72,
                 minHeight: 44,
               }}
             >
               <div style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden' }}>{meta.emoji} {meta.name}</div>
               <div className="font-mono" style={{ fontSize: 11, marginTop: 2, color: active ? meta.color + 'bb' : '#64748b' }}>
-                💰{cost} {d.damage ? `⚡${d.damage}` : ''} {d.hitChance ? `${Math.round(d.hitChance * 100)}%` : ''}
+                💰{cost} {d.damage ? (d.damage >= 999 ? '⚡💀' : `⚡${d.damage}`) : ''} {d.hitChance ? `${Math.round(d.hitChance * 100)}%` : ''}
               </div>
               <div className="font-mono" style={{ fontSize: 11, color: mx ? '#ef4444' : '#475569' }}>
                 {c}/{d.maxCount}{mx ? ' МАКС' : ''}
