@@ -67,6 +67,7 @@ test('fullscreen menu-like screens use a constrained scroll shell', () => {
     'src/ui/DifficultySelect.jsx',
     'src/ui/Leaderboard.jsx',
     'src/ui/TechPage.jsx',
+    'src/ui/ResultsScreen.jsx',
   ];
 
   for (const file of files) {
