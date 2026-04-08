@@ -1,7 +1,7 @@
 // Combat system: towers firing, projectiles, FPV drones
 import { TICK, dist, ang, rnd, chance, uid } from './physics.js';
 import { DEF_META } from '../data/units.js';
-import { addLog } from './state.js';
+import { addLog, registerKill } from './state.js';
 import { getEWMultipliers } from './events.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 import { getKillQuip } from '../data/battleQuips.js';
@@ -114,6 +114,7 @@ export function updateCombat(g) {
             g.score += tgt.reward;
             g.killed++;
             if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
+            registerKill(g, tgt.reward, tgt.x, tgt.y);
             playExplosion(false);
             // Credit kill to tower
             const src = p.sourceTowerId ? g.towers.find(t => t.id === p.sourceTowerId) : null;
@@ -185,6 +186,7 @@ export function updateCombat(g) {
           g.score += tgt.reward;
           g.killed++;
           if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
+          registerKill(g, tgt.reward, tgt.x, tgt.y);
           // Credit kill to crew tower
           if (fd.sourceTowerId) {
             const src = g.towers.find(t => t.id === fd.sourceTowerId);

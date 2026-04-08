@@ -53,10 +53,20 @@ export function updateIskander(g) {
 function spawnWarning(g, m) {
   const city = g.city;
   const zone = city.placeZone;
-  const cols = Math.floor((zone.right - zone.left) / GRID);
-  const rows = Math.floor(city.height / GRID);
-  const gx = zone.left + Math.floor(Math.random() * cols) * GRID + GRID / 2;
-  const gy = Math.floor(Math.random() * rows) * GRID + GRID / 2;
+  let gx, gy;
+
+  // 40% chance Iskander targets a Decoy instead of random position
+  const aliveDecoys = g.towers.filter(t => t.type === 'decoy' && t.hp > 0);
+  if (aliveDecoys.length > 0 && chance(0.40)) {
+    const decoy = aliveDecoys[Math.floor(Math.random() * aliveDecoys.length)];
+    gx = decoy.x;
+    gy = decoy.y;
+  } else {
+    const cols = Math.floor((zone.right - zone.left) / GRID);
+    const rows = Math.floor(city.height / GRID);
+    gx = zone.left + Math.floor(Math.random() * cols) * GRID + GRID / 2;
+    gy = Math.floor(Math.random() * rows) * GRID + GRID / 2;
+  }
 
   g.iskanderWarn = { x: gx, y: gy, life: m.iskander.warnTicks };
   addLog(g, `🚀 ${getIskanderQuip('incoming')}`);

@@ -49,6 +49,10 @@ export function createGameState(city, mode) {
     ewActive: null,
     ewCooldown: 0,
     weather: rollWeather(),
+    // Combo kill streak
+    comboCount: 0,
+    comboTimer: 0, // ticks remaining for combo window
+    bestCombo: 0,
     // Patriot interception
     patriotInterceptions: 0,
     patriotMax: 3,
@@ -80,6 +84,7 @@ export function getUIState(g) {
     ewActive: !!g.ewActive,
     f16Active: !!g.f16,
     patriotInterceptions: g.patriotInterceptions,
+    bestCombo: g.bestCombo,
     towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
   };
 }
@@ -124,4 +129,43 @@ export function getFinalRoster(g) {
 
 export function addLog(g, msg) {
   g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 20);
+}
+
+// Combo system: call on every kill to track streaks
+const COMBO_WINDOW = 45; // ticks (~2.5s at base speed)
+const COMBO_THRESHOLDS = [
+  { min: 3, mul: 1.2, label: 'Серія x3!' },
+  { min: 5, mul: 1.5, label: 'Серія x5!' },
+  { min: 8, mul: 1.8, label: 'Масове знищення!' },
+  { min: 12, mul: 2.0, label: 'ГЕРОЙ ППО!' },
+];
+
+export function registerKill(g, reward, x, y) {
+  g.comboCount++;
+  g.comboTimer = COMBO_WINDOW;
+  if (g.comboCount > g.bestCombo) g.bestCombo = g.comboCount;
+
+  // Find highest matching threshold
+  let bonus = 0;
+  for (let i = COMBO_THRESHOLDS.length - 1; i >= 0; i--) {
+    const t = COMBO_THRESHOLDS[i];
+    if (g.comboCount === t.min) {
+      bonus = Math.round(reward * (t.mul - 1));
+      g.money += bonus;
+      g.score += bonus;
+      addLog(g, `🔥 ${t.label} +${bonus}💰`);
+      g.floats.push({ x, y: y - 24, text: t.label, color: '#fbbf24', life: 60, ml: 60 });
+      break;
+    }
+  }
+  return bonus;
+}
+
+export function updateCombo(g) {
+  if (g.comboTimer > 0) {
+    g.comboTimer--;
+    if (g.comboTimer <= 0) {
+      g.comboCount = 0;
+    }
+  }
 }

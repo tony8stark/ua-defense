@@ -21,6 +21,13 @@ export function flatWave(waveDef) {
 function pickTarget(g, enemyType) {
   const tdc = g.mode[enemyType].targetDef;
   if (chance(tdc)) {
+    // Guided drones: 60% chance to target a Decoy first (if any alive)
+    if (enemyType === 'guided') {
+      const decoys = g.towers.filter(t => t.type === 'decoy' && t.hp > 0);
+      if (decoys.length > 0 && chance(0.60)) {
+        return { mode: 'tower', id: decoys[Math.floor(Math.random() * decoys.length)].id };
+      }
+    }
     const activeDef = g.towers.filter(t => t.hp > 0);
     if (activeDef.length) {
       return { mode: 'tower', id: activeDef[Math.floor(Math.random() * activeDef.length)].id };
