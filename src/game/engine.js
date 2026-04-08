@@ -1,5 +1,5 @@
 // Main game update loop: orchestrates spawning, movement, combat, effects
-import { TICK, dist, ang, rnd, chance } from './physics.js';
+import { TICK, dist, ang, rnd, chance, updateTick } from './physics.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
@@ -33,6 +33,7 @@ export function startWave(g) {
 // One game tick
 export function update(g) {
   g.tick++;
+  updateTick(g);
 
   // Spawn enemies from queue
   if (g.waveActive && g.spawnQueue.length > 0) {
