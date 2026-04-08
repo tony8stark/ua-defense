@@ -1,5 +1,6 @@
-// Tower, kukurzniki, FPV drone rendering
+// Tower, kukurzniki, FPV drone rendering with SVG sprites
 import { DEF_META } from '../../data/units.js';
+import { TOWER_SPRITES, drawSprite } from '../../data/sprites.js';
 
 const SYNERGY_RANGE = 56;
 
@@ -27,33 +28,52 @@ export function drawTowers(ctx, g) {
 
   for (const tw of g.towers) {
     const mc = DEF_META[tw.type];
-    const alive = tw.hp > 0;
-    const alpha = alive ? 1 : Math.max(0, (tw.deathTimer || 0) / 30);
+    const isAlive = tw.hp > 0;
+    const alpha = isAlive ? 1 : Math.max(0, (tw.deathTimer || 0) / 30);
 
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = alive ? '#1a2e1e' : '#2a1515';
-    ctx.strokeStyle = alive ? mc.color + '88' : '#7f1d1d88';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(tw.x, tw.y, 11, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
 
-    if (tw.type !== 'airfield' && alive) {
-      ctx.save();
-      ctx.translate(tw.x, tw.y);
-      ctx.rotate(tw.angle);
-      ctx.fillStyle = mc.color;
-      ctx.fillRect(0, -1.5, 12, 3);
-      ctx.restore();
+    const sprite = TOWER_SPRITES[tw.type];
+    if (isAlive && sprite && sprite.complete) {
+      // Draw sprite (towers don't rotate except barrel direction shown by gun line)
+      drawSprite(ctx, sprite, tw.x, tw.y, 0, 0.75);
+
+      // Gun barrel direction (for turret-type towers)
+      if (tw.type !== 'airfield' && tw.type !== 'decoy') {
+        ctx.save();
+        ctx.translate(tw.x, tw.y);
+        ctx.rotate(tw.angle);
+        ctx.fillStyle = mc.color;
+        ctx.fillRect(6, -1.5, 10, 3);
+        ctx.restore();
+      }
+    } else {
+      // Death/fallback: original rendering
+      ctx.fillStyle = isAlive ? '#1a2e1e' : '#2a1515';
+      ctx.strokeStyle = isAlive ? mc.color + '88' : '#7f1d1d88';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(tw.x, tw.y, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      if (tw.type !== 'airfield' && isAlive) {
+        ctx.save();
+        ctx.translate(tw.x, tw.y);
+        ctx.rotate(tw.angle);
+        ctx.fillStyle = mc.color;
+        ctx.fillRect(0, -1.5, 12, 3);
+        ctx.restore();
+      }
+
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isAlive ? mc.emoji : '💥', tw.x, tw.y);
     }
 
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(alive ? mc.emoji : '💥', tw.x, tw.y);
-
-    if (alive && tw.hp < tw.maxHp) {
+    // HP bar (if damaged)
+    if (isAlive && tw.hp < tw.maxHp) {
       const pct = tw.hp / tw.maxHp;
       ctx.fillStyle = '#0008';
       ctx.fillRect(tw.x - 10, tw.y - 16, 20, 3);
@@ -63,7 +83,7 @@ export function drawTowers(ctx, g) {
 
     // Upgrade level rings
     const level = tw.level || 0;
-    if (alive && level > 0) {
+    if (isAlive && level > 0) {
       ctx.strokeStyle = mc.color + '55';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(tw.x, tw.y, 14, 0, Math.PI * 2); ctx.stroke();

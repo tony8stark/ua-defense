@@ -1,4 +1,6 @@
-// Enemy drone rendering
+// Enemy drone rendering with SVG sprites
+import { ENEMY_SPRITES, drawSprite } from '../../data/sprites.js';
+
 export function drawEnemies(ctx, g) {
   for (const en of g.enemies) {
     // Stealth enemies: almost invisible (faint shimmer only)
@@ -12,6 +14,7 @@ export function drawEnemies(ctx, g) {
       ctx.globalAlpha = 1;
       continue;
     }
+
     // Target line for tower-hunting enemies
     if (en.target?.mode === 'tower') {
       const tw = g.towers.find(t => t.id === en.target.id && t.hp > 0);
@@ -27,34 +30,29 @@ export function drawEnemies(ctx, g) {
       }
     }
 
-    // Drone body
-    ctx.save();
-    ctx.translate(en.x, en.y);
-    ctx.rotate(en.angle);
-    const sz = en.sz;
+    // Draw sprite
+    const sprite = ENEMY_SPRITES[en.type];
+    const scale = en.sz / 14; // normalize to base size
+    if (sprite && sprite.complete) {
+      drawSprite(ctx, sprite, en.x, en.y, en.angle, scale);
+    } else {
+      // Fallback: original procedural rendering
+      ctx.save();
+      ctx.translate(en.x, en.y);
+      ctx.rotate(en.angle);
+      const sz = en.sz;
+      ctx.fillStyle = en.color;
+      ctx.beginPath();
+      ctx.moveTo(sz, 0);
+      ctx.lineTo(-sz * 0.6, -sz * 0.7);
+      ctx.lineTo(-sz * 0.3, 0);
+      ctx.lineTo(-sz * 0.6, sz * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
 
-    // Main shape
-    ctx.fillStyle = en.color;
-    ctx.beginPath();
-    ctx.moveTo(sz, 0);
-    ctx.lineTo(-sz * 0.6, -sz * 0.7);
-    ctx.lineTo(-sz * 0.3, 0);
-    ctx.lineTo(-sz * 0.6, sz * 0.7);
-    ctx.closePath();
-    ctx.fill();
-
-    // Wings
-    ctx.fillStyle = en.color + '88';
-    ctx.beginPath();
-    ctx.moveTo(-sz * 0.3, 0);
-    ctx.lineTo(-sz * 0.8, -sz * 0.35);
-    ctx.lineTo(-sz * 0.7, 0);
-    ctx.lineTo(-sz * 0.8, sz * 0.35);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    // Special effects per type
+    // Special effects per type (glow, labels)
     if (en.type === 'lancet') {
       ctx.shadowColor = '#f87171';
       ctx.shadowBlur = 6;
@@ -78,7 +76,6 @@ export function drawEnemies(ctx, g) {
       ctx.shadowBlur = 0;
     }
     if (en.type === 'guided') {
-      // Pulsing red "eye"
       const pulse = Math.sin(g.tick * 0.2) * 0.4 + 0.6;
       ctx.shadowColor = '#ff0000';
       ctx.shadowBlur = 10 * pulse;
@@ -87,17 +84,14 @@ export function drawEnemies(ctx, g) {
       ctx.arc(en.x, en.y, 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-      // "ОПЕРАТОР" label
       if (g.tick % 60 < 40) {
         ctx.font = "bold 7px 'Courier New'";
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ff6b6b88';
-        ctx.fillText('ОПЕРАТОР', en.x, en.y - sz - 12);
+        ctx.fillText('ОПЕРАТОР', en.x, en.y - en.sz - 12);
       }
     }
-
     if (en.type === 'kalibr') {
-      // Blue engine glow trail
       ctx.shadowColor = '#38bdf8';
       ctx.shadowBlur = 10;
       ctx.fillStyle = '#38bdf8';
@@ -111,7 +105,6 @@ export function drawEnemies(ctx, g) {
       ctx.shadowBlur = 0;
     }
     if (en.type === 'kh101') {
-      // Purple glow + "Кх-101" label
       ctx.shadowColor = '#c084fc';
       ctx.shadowBlur = 8;
       ctx.fillStyle = '#c084fc';
@@ -127,11 +120,10 @@ export function drawEnemies(ctx, g) {
         ctx.font = "bold 7px 'Courier New'";
         ctx.textAlign = 'center';
         ctx.fillStyle = '#c084fc88';
-        ctx.fillText('Кх-101', en.x, en.y - sz - 12);
+        ctx.fillText('Кх-101', en.x, en.y - en.sz - 12);
       }
     }
     if (en.type === 'orlan') {
-      // Pulsing green scanner ring
       const pulse = Math.sin(g.tick * 0.15) * 0.4 + 0.6;
       ctx.strokeStyle = `rgba(110,231,183,${pulse * 0.5})`;
       ctx.lineWidth = 1;
@@ -140,20 +132,19 @@ export function drawEnemies(ctx, g) {
       ctx.arc(en.x, en.y, 18 + pulse * 4, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
-      // "РОЗВІДКА" label
       if (g.tick % 80 < 55) {
         ctx.font = "bold 7px 'Courier New'";
         ctx.textAlign = 'center';
         ctx.fillStyle = '#6ee7b788';
-        ctx.fillText('РОЗВІДКА', en.x, en.y - sz - 12);
+        ctx.fillText('РОЗВІДКА', en.x, en.y - en.sz - 12);
       }
     }
 
     // HP bar
     const pct = en.hp / en.maxHp;
     ctx.fillStyle = '#000a';
-    ctx.fillRect(en.x - 11, en.y - sz - 7, 22, 3);
+    ctx.fillRect(en.x - 11, en.y - en.sz - 7, 22, 3);
     ctx.fillStyle = pct > 0.5 ? '#ef4444' : '#f59e0b';
-    ctx.fillRect(en.x - 11, en.y - sz - 7, 22 * pct, 3);
+    ctx.fillRect(en.x - 11, en.y - en.sz - 7, 22 * pct, 3);
   }
 }

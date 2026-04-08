@@ -20,6 +20,7 @@ import BottomBar from './ui/BottomBar.jsx';
 import ContextMenu from './ui/ContextMenu.jsx';
 import Leaderboard from './ui/Leaderboard.jsx';
 import TechPage from './ui/TechPage.jsx';
+import Tutorial, { shouldShowTutorial } from './ui/Tutorial.jsx';
 
 export default function App() {
   const [phase, setPhase] = useState('menu');
@@ -29,6 +30,7 @@ export default function App() {
   const [spd, _setSpd] = useState(1);
   const [ui, setUI] = useState({ money: 0, score: 0, wave: 0, killed: 0, waveActive: false, bHp: {}, counts: {}, logs: [] });
   const [ctxMenu, setCtxMenu] = useState(null); // { type: 'tower'|'building', item, screenX, screenY }
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -50,6 +52,7 @@ export default function App() {
     setDifficulty(d);
     phaseRef.current = 'playing';
     setPhase('playing');
+    if (shouldShowTutorial()) setShowTutorial(true);
   }, []);
 
   // Start wave
@@ -476,6 +479,9 @@ export default function App() {
           onTrivoga={handleTrivoga}
         />
       </div>
+
+      {/* Tutorial overlay */}
+      {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
 
       {/* Context menu */}
       <ContextMenu
