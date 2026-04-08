@@ -159,6 +159,17 @@ const RARE_QUIPS = [
   'Ворожий дрон заблукав. Карти Яндекса підвели.',
 ];
 
+// --- PATRIOT INTERCEPT ---
+const PATRIOT_INTERCEPT = [
+  'Patriot відпрацював! Іскандер перехоплено!',
+  'Є перехоплення! Балістику знято!',
+  'Patriot — влучання! Іскандер не дійшов.',
+  'Привіт з Алабами! Балістика — мінус.',
+  'Перехоплення підтверджено. Небо чисте.',
+  'PAC-3 в цілі! Іскандер розсипався.',
+  'Є контакт! Patriot зняв балістику.',
+];
+
 // --- HELPERS ---
 
 function pick(arr) {
@@ -200,6 +211,10 @@ export function getEWQuip(event) {
   if (event === 'start') return pick(EW_START);
   if (event === 'end') return pick(EW_END);
   return null;
+}
+
+export function getPatriotQuip() {
+  return pick(PATRIOT_INTERCEPT);
 }
 
 export function getWeatherQuip(weatherId) {

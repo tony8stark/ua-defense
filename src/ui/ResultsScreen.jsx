@@ -11,7 +11,7 @@ const ENEMY_META = {
   guided: { name: 'Керований', emoji: '👁️', color: '#ff6b6b' },
 };
 
-export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, onMenu, onLeaderboard }) {
+export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, patriotInterceptions, onMenu, onLeaderboard }) {
   const m = MODES[difficulty];
   const survived = Object.values(bHp).filter(h => h > 0).length;
   const killRate = totalSpawned > 0 ? Math.round((killed / totalSpawned) * 100) : 0;
@@ -74,6 +74,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
           { label: '% збиття', value: `${killRate}%`, color: killRate >= 80 ? '#4ade80' : killRate >= 50 ? '#f59e0b' : '#ef4444' },
           { label: 'Хвилі', value: `${wave}/${m?.waves.length || 0}`, color: '#a78bfa' },
           { label: "Об'єкти", value: `${survived}/5`, color: '#4ade80' },
+          ...(patriotInterceptions > 0 ? [{ label: 'Patriot', value: patriotInterceptions, color: '#60a5fa' }] : []),
         ].map(s => (
           <div key={s.label} style={{ textAlign: 'center' }}>
             <div className="font-mono" style={{ fontSize: 26, fontWeight: 900, color: s.color }}>{s.value}</div>

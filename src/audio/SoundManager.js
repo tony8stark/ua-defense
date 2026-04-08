@@ -227,6 +227,48 @@ export function playEWBuzz() {
   osc2.stop(c.currentTime + 0.6);
 }
 
+// Patriot launch: deep rising whoosh + sharp crack
+export function playPatriotLaunch() {
+  if (_muted) return;
+  const c = getCtx();
+
+  // Rising whoosh
+  const osc = c.createOscillator();
+  const gain = c.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(100, c.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(2000, c.currentTime + 0.6);
+  gain.gain.setValueAtTime(0.1, c.currentTime);
+  gain.gain.linearRampToValueAtTime(0.18, c.currentTime + 0.4);
+  gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8);
+  osc.connect(gain).connect(out());
+  osc.start(c.currentTime);
+  osc.stop(c.currentTime + 0.8);
+
+  // Intercept crack (delayed)
+  const osc2 = c.createOscillator();
+  const gain2 = c.createGain();
+  osc2.type = 'square';
+  osc2.frequency.setValueAtTime(3000, c.currentTime + 0.55);
+  osc2.frequency.exponentialRampToValueAtTime(200, c.currentTime + 0.75);
+  gain2.gain.setValueAtTime(0, c.currentTime);
+  gain2.gain.setValueAtTime(0.2, c.currentTime + 0.55);
+  gain2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.85);
+  osc2.connect(gain2).connect(out());
+  osc2.start(c.currentTime + 0.55);
+  osc2.stop(c.currentTime + 0.85);
+
+  // Noise burst at intercept
+  const src = c.createBufferSource();
+  src.buffer = noise(0.3, 0.4);
+  const nGain = c.createGain();
+  nGain.gain.setValueAtTime(0, c.currentTime);
+  nGain.gain.setValueAtTime(0.15, c.currentTime + 0.55);
+  nGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.85);
+  src.connect(nGain).connect(out());
+  src.start(c.currentTime + 0.55);
+}
+
 // Place tower: confirmation click
 export function playPlace() {
   if (_muted) return;

@@ -4,7 +4,7 @@ import { drawBuildings } from './buildings.js';
 import { drawTowers, drawKukurzniki, drawFriendlyDrones, drawProjectiles } from './units.js';
 import { drawEnemies } from './enemies.js';
 import { drawEffects } from './effects.js';
-import { drawIskanderWarning, drawHoverPreview } from './hud-canvas.js';
+import { drawIskanderWarning, drawHoverPreview, drawPatriotAnim } from './hud-canvas.js';
 import { drawF16, drawEWOverlay, drawWeatherOverlay } from '../events.js';
 
 export function draw(ctx, g, hover, selectedType) {
@@ -22,6 +22,7 @@ export function draw(ctx, g, hover, selectedType) {
   drawFriendlyDrones(ctx, g);
   drawProjectiles(ctx, g);
   drawF16(ctx, g);
+  drawPatriotAnim(ctx, g);
   drawEffects(ctx, g);
   drawEWOverlay(ctx, g);
 }

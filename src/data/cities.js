@@ -50,7 +50,7 @@ const DESKTOP = {
       { side: 'topright', weight: 0.25 },
     ],
     terrain: 'urban',
-    bonuses: { turretAccuracy: 0.15 },
+    bonuses: { turretAccuracy: 0.15, patriotBonus: 0.10 },
   },
 };
 

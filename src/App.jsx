@@ -383,7 +383,7 @@ export default function App() {
     const g = gRef.current;
     const mvp = g?.towers?.filter(t => (t.kills || 0) > 0).sort((a, b) => (b.kills || 0) - (a.kills || 0))[0] || null;
     const roster = gRef.current ? getFinalRoster(gRef.current) : [];
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} patriotInterceptions={ui.patriotInterceptions} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
   // PLAYING

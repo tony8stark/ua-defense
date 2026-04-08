@@ -1,23 +1,41 @@
-// Iskander ballistic missile subsystem
-import { TICK, dist, rnd } from './physics.js';
+// Iskander ballistic missile subsystem + Patriot interception
+import { TICK, dist, rnd, chance } from './physics.js';
 import { GRID } from '../data/cities.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed } from './state.js';
 import { playSiren, playExplosion } from '../audio/SoundManager.js';
-import { getIskanderQuip } from '../data/battleQuips.js';
+import { playPatriotLaunch } from '../audio/SoundManager.js';
+import { getIskanderQuip, getPatriotQuip } from '../data/battleQuips.js';
+
+const PATRIOT_RISE_TICKS = 55;
+const PATRIOT_EXPLODE_TICKS = 65;
+const PATRIOT_TOTAL_TICKS = PATRIOT_RISE_TICKS + PATRIOT_EXPLODE_TICKS;
 
 export function updateIskander(g) {
   const m = g.mode;
-  // Training & Realistic: Iskander only during active waves
-  // Hell: Iskander can strike between waves too
   const isHell = m.iskander.interval[0] < 600;
   const betweenWaves = !g.waveActive && g.wave > 0;
 
-  // Always resolve an active warning (even between waves)
+  // Update active Patriot animation
+  if (g.patriotAnim) {
+    g.patriotAnim.tick++;
+    if (g.patriotAnim.tick >= PATRIOT_TOTAL_TICKS) {
+      g.patriotAnim = null;
+    }
+  }
+
+  // Resolve active Iskander warning
   if (g.iskanderWarn) {
     g.iskanderWarn.life -= TICK;
     if (g.iskanderWarn.life <= 0) {
-      impact(g, m);
+      // Roll for Patriot intercept
+      const patriotChance = m.iskander.patriotChance || 0;
+      const cityBonus = g.city.bonuses?.patriotBonus || 0;
+      if (g.patriotInterceptions < g.patriotMax && chance(patriotChance + cityBonus)) {
+        intercept(g, m);
+      } else {
+        impact(g, m);
+      }
     }
     return;
   }
@@ -43,6 +61,45 @@ function spawnWarning(g, m) {
   g.iskanderWarn = { x: gx, y: gy, life: m.iskander.warnTicks };
   addLog(g, `🚀 ${getIskanderQuip('incoming')}`);
   playSiren();
+}
+
+function intercept(g, m) {
+  const iw = g.iskanderWarn;
+  const H = g.city.height;
+  const W = g.city.width;
+
+  // Patriot launches from random position along bottom edge
+  const launchX = rnd(W * 0.15, W * 0.85);
+  const launchY = H + 20;
+
+  // Intercept point: slightly above target (Iskander is coming down)
+  const interceptY = Math.max(30, iw.y - rnd(40, 80));
+
+  g.patriotAnim = {
+    tick: 0,
+    launchX,
+    launchY,
+    targetX: iw.x,
+    targetY: interceptY,
+    // Current missile position (interpolated during render)
+  };
+
+  g.patriotInterceptions++;
+  addLog(g, `🛡️ ${getPatriotQuip()}`);
+  playPatriotLaunch();
+
+  // Spawn particles at intercept point (delayed visually by renderer)
+  for (let i = 0; i < 16; i++) {
+    g.particles.push({
+      x: iw.x + rnd(-10, 10), y: interceptY + rnd(-10, 10),
+      vx: rnd(-3, 3), vy: rnd(-4, 2),
+      life: rnd(20, 50) + PATRIOT_RISE_TICKS, // delayed start
+      color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fbbf24' : '#60a5fa',
+    });
+  }
+
+  g.iskanderWarn = null;
+  g.iskanderTimer = rnd(m.iskander.interval[0], m.iskander.interval[1]);
 }
 
 function impact(g, m) {

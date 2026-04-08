@@ -49,6 +49,10 @@ export function createGameState(city, mode) {
     ewActive: null,
     ewCooldown: 0,
     weather: rollWeather(),
+    // Patriot interception
+    patriotInterceptions: 0,
+    patriotMax: 3,
+    patriotAnim: null,
   };
 }
 
@@ -75,6 +79,7 @@ export function getUIState(g) {
     weather: g.weather,
     ewActive: !!g.ewActive,
     f16Active: !!g.f16,
+    patriotInterceptions: g.patriotInterceptions,
     towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
   };
 }
