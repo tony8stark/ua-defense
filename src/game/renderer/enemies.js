@@ -85,6 +85,25 @@ export function drawEnemies(ctx, g) {
       }
     }
 
+    if (en.type === 'orlan') {
+      // Pulsing green scanner ring
+      const pulse = Math.sin(g.tick * 0.15) * 0.4 + 0.6;
+      ctx.strokeStyle = `rgba(110,231,183,${pulse * 0.5})`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, 18 + pulse * 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // "РОЗВІДКА" label
+      if (g.tick % 80 < 55) {
+        ctx.font = "bold 7px 'Courier New'";
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#6ee7b788';
+        ctx.fillText('РОЗВІДКА', en.x, en.y - sz - 12);
+      }
+    }
+
     // HP bar
     const pct = en.hp / en.maxHp;
     ctx.fillStyle = '#000a';

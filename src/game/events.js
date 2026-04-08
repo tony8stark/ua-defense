@@ -3,6 +3,8 @@ import { TICK, rnd, uid } from './physics.js';
 import { addLog } from './state.js';
 import { playJetFlyby, playEWBuzz } from '../audio/SoundManager.js';
 import { getF16Quip, getEWQuip } from '../data/battleQuips.js';
+import { ENEMY_COLORS, ENEMY_SIZES } from '../data/enemies.js';
+import { getSpawnPos, pickSpawnEdge } from '../data/cities.js';
 
 // ====== F-16 VIPER ======
 
@@ -200,6 +202,50 @@ export function getEWMultipliers(g) {
     fpvLossMul: 3.0,      // FPV loses signal 3x more often
     kukurznikAccMul: 0.5,  // kukurznik accuracy halved
   };
+}
+
+// ====== ORLAN-10 RECON ======
+
+export function trySpawnOrlan(g) {
+  if (g.wave < 2) return; // not on first 2 waves
+  const orlanCfg = g.mode.orlan;
+  if (!orlanCfg) return;
+  if (Math.random() > orlanCfg.spawnChance) return;
+
+  // Already an orlan in the air? skip
+  if (g.enemies.some(e => e.type === 'orlan')) return;
+
+  const W = g.city.width, H = g.city.height;
+  const edge = pickSpawnEdge(g.city);
+  const pos = getSpawnPos(g.city, edge);
+
+  // Escape target: opposite side of the map
+  let escX, escY;
+  if (pos.x <= 0) { escX = W + 30; escY = rnd(H * 0.2, H * 0.8); }
+  else if (pos.x >= W) { escX = -30; escY = rnd(H * 0.2, H * 0.8); }
+  else if (pos.y <= 0) { escX = rnd(W * 0.2, W * 0.8); escY = H + 30; }
+  else { escX = rnd(W * 0.2, W * 0.8); escY = -30; }
+
+  g.enemies.push({
+    x: pos.x, y: pos.y,
+    hp: orlanCfg.hp, maxHp: orlanCfg.hp,
+    speed: orlanCfg.speed,
+    dmg: 0,
+    reward: orlanCfg.reward,
+    color: ENEMY_COLORS.orlan,
+    sz: ENEMY_SIZES.orlan,
+    type: 'orlan',
+    target: { mode: 'escape', x: escX, y: escY },
+    id: uid(),
+    angle: Math.atan2(escY - pos.y, escX - pos.x),
+    dodgeChance: 0,
+  });
+
+  g.totalSpawned++;
+  if (g.spawnedByType.orlan === undefined) g.spawnedByType.orlan = 0;
+  g.spawnedByType.orlan++;
+
+  addLog(g, '👁️ Орлан-10 в повітрі! Розвідник — збийте його!');
 }
 
 // ====== WEATHER ======

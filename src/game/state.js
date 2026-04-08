@@ -41,14 +41,17 @@ export function createGameState(city, mode) {
     unitRoster: [],
     // Spawn/kill stats per enemy type
     totalSpawned: 0,
-    spawnedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0 },
-    killedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0 },
+    spawnedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0, orlan: 0 },
+    killedByType: { shahed: 0, shahed238: 0, geran: 0, lancet: 0, guided: 0, orlan: 0 },
     // Events
     f16: null,
     f16Cooldown: 0,
     ewActive: null,
     ewCooldown: 0,
     weather: rollWeather(),
+    // Orlan recon: buff multiplier for next wave (1.0 = no buff)
+    nextWaveBuff: 1.0,
+    orlanEscapes: 0,
     // Combo kill streak
     comboCount: 0,
     comboTimer: 0, // ticks remaining for combo window

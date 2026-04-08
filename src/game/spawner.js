@@ -65,6 +65,13 @@ export function spawnEnemy(g, type) {
     dodgeChance: et.dodgeChance || 0,
   });
 
+  // Apply Orlan recon wave buff (if any)
+  if (g._waveBuff > 1.0) {
+    const en = g.enemies[g.enemies.length - 1];
+    en.hp = Math.round(en.hp * g._waveBuff);
+    en.maxHp = en.hp;
+  }
+
   // Track spawn stats
   g.totalSpawned++;
   if (g.spawnedByType[type] !== undefined) g.spawnedByType[type]++;

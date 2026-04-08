@@ -3,7 +3,7 @@ import { TICK, dist, ang, rnd, chance, updateTick } from './physics.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
-import { trySpawnF16, updateF16, trySpawnEW, updateEW, rollWeather } from './events.js';
+import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, rollWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed, updateCombo } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
@@ -18,6 +18,15 @@ export function startWave(g) {
   g.waveActive = true;
   g.waveDelay = waveDef.d;
 
+  // Apply Orlan recon buff (if any)
+  if (g.nextWaveBuff > 1.0) {
+    g._waveBuff = g.nextWaveBuff;
+    addLog(g, `⚠️ Ворог використав розвідку! HP ворогів x${g.nextWaveBuff.toFixed(1)}`);
+    g.nextWaveBuff = 1.0;
+  } else {
+    g._waveBuff = 1.0;
+  }
+
   // Roll new weather for this wave
   g.weather = rollWeather();
   if (g.weather.id !== 'clear') {
@@ -30,6 +39,7 @@ export function startWave(g) {
   // Try spawn events at wave start
   trySpawnF16(g);
   trySpawnEW(g);
+  trySpawnOrlan(g);
 
   return true;
 }
@@ -68,6 +78,24 @@ export function update(g) {
 
   // Move enemies toward targets
   for (const en of g.enemies) {
+    // Orlan recon: flies straight to escape point, no retarget
+    if (en.type === 'orlan') {
+      const esc = en.target;
+      const a = ang(en, { x: esc.x, y: esc.y });
+      en.x += Math.cos(a) * en.speed * TICK;
+      en.y += Math.sin(a) * en.speed * TICK;
+      en.angle = a;
+      // Check if escaped (reached target area)
+      if (dist(en, { x: esc.x, y: esc.y }) < 30) {
+        const buffPct = g.mode.orlan?.waveBuff || 0.25;
+        g.nextWaveBuff += buffPct;
+        g.orlanEscapes++;
+        addLog(g, `⚠️ Орлан пройшов! Наступна хвиля +${Math.round(buffPct * 100)}%`);
+        en.hp = 0;
+      }
+      continue;
+    }
+
     let to = getTargetPoint(g, en.target);
     if (!to) { retarget(g, en); to = getTargetPoint(g, en.target); }
     if (!to) continue;

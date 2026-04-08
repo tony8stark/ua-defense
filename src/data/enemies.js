@@ -5,6 +5,7 @@ export const ENEMY_COLORS = {
   geran: '#cbd5e1',
   lancet: '#f87171',
   guided: '#ff6b6b', // operator-guided, red with pulsing eye
+  orlan: '#6ee7b7',  // recon drone, green tint
 };
 
 export const ENEMY_SIZES = {
@@ -13,4 +14,5 @@ export const ENEMY_SIZES = {
   geran: 11,
   lancet: 9,
   guided: 15, // slightly larger, menacing
+  orlan: 10,  // small recon UAV
 };
