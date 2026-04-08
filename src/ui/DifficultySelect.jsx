@@ -4,7 +4,7 @@ import { getWaveDisplayTotal, isEndlessMode } from '../game/waves.js';
 export default function DifficultySelect({ onSelect, onBack }) {
   return (
     <div style={{
-      minHeight: '100dvh', display: 'flex', alignItems: 'safe center', justifyContent: 'center',
+      height: '100dvh', display: 'flex', alignItems: 'safe center', justifyContent: 'center',
       padding: '24px 12px', overflowY: 'auto',
       background: 'linear-gradient(160deg, #0a1628, #0f2b3d 40%, #1a2a1a 70%, #0c1222)',
     }}>

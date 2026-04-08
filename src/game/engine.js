@@ -4,6 +4,7 @@ import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
+import { shouldRevealStealthEnemy } from './stealth.js';
 import { getWaveDef, hasMoreWaves } from './waves.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed, updateCombo, updateTrivoga, getBuildingBonuses } from './state.js';
@@ -104,20 +105,14 @@ export function update(g) {
     if (!hasMoreWaves(g.mode, g.wave)) return 'won';
   }
 
-  // Reveal stealth enemies near towers (detection range ~120px)
-  const STEALTH_DETECT = 120;
+  // Reveal low-flying targets only once they are almost over the objective
+  // or already inside a very tight point-defense bubble.
   for (const en of g.enemies) {
-    if (en.stealth) {
-      for (const tw of g.towers) {
-        if (tw.hp <= 0) continue;
-        if (dist(en, tw) < STEALTH_DETECT) {
-          en.stealth = false;
-          addLog(g, '⚠️ Низьколітна ціль виявлена!');
-          // Visual pop effect
-          g.floats.push({ x: en.x, y: en.y - 16, text: '👁️ ВИЯВЛЕНО', color: '#fbbf24', life: 50, ml: 50 });
-          break;
-        }
-      }
+    if (en.stealth && shouldRevealStealthEnemy(g, en)) {
+      en.stealth = false;
+      addLog(g, '⚠️ Низьколітна ціль виявлена!');
+      // Visual pop effect
+      g.floats.push({ x: en.x, y: en.y - 16, text: '👁️ ВИЯВЛЕНО', color: '#fbbf24', life: 50, ml: 50 });
     }
   }
 

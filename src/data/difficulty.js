@@ -23,6 +23,7 @@ export const MODES = {
     kalibr: { hp: 100, speed: 1.1, dmg: 50, reward: 30, targetDef: 0 },
     kh101: { hp: 80, speed: 1.3, dmg: 40, reward: 25, targetDef: 0, spawnChance: 0.12, count: [2, 3] },
     orlan: { hp: 35, speed: 0.6, reward: 25, spawnChance: 0.20, waveBuff: 0.25 },
+    ew: { fpvLossMul: 1.6, kukurznikAccMul: 0.82, duration: [520, 720] },
     iskander: { interval: [1400, 2000], warnTicks: 100, dmg: 999, splashPct: 0.5, patriotChance: 0.35 },
     waves: [
       { en: [{ t: 'shahed', n: 4 }], d: 60 },
@@ -58,6 +59,7 @@ export const MODES = {
     kalibr: { hp: 175, speed: 1.4, dmg: 65, reward: 35, targetDef: 0.06 },
     kh101: { hp: 120, speed: 1.5, dmg: 55, reward: 30, targetDef: 0.05, spawnChance: 0.15, count: [3, 4] },
     orlan: { hp: 50, speed: 0.7, reward: 28, spawnChance: 0.25, waveBuff: 0.30 },
+    ew: { fpvLossMul: 2.05, kukurznikAccMul: 0.68, duration: [560, 780] },
     iskander: { interval: [800, 1300], warnTicks: 90, dmg: 999, splashPct: 0.5, patriotChance: 0.25 },
     waves: [
       { en: [{ t: 'shahed', n: 5 }], d: 55 },
@@ -95,6 +97,7 @@ export const MODES = {
     kalibr: { hp: 220, speed: 1.5, dmg: 70, reward: 40, targetDef: 0.10 },
     kh101: { hp: 160, speed: 1.7, dmg: 65, reward: 35, targetDef: 0.10, spawnChance: 0.18, count: [3, 5] },
     orlan: { hp: 65, speed: 0.8, reward: 30, spawnChance: 0.30, waveBuff: 0.35 },
+    ew: { fpvLossMul: 2.45, kukurznikAccMul: 0.58, duration: [620, 860] },
     iskander: { interval: [500, 900], warnTicks: 75, dmg: 999, splashPct: 0.5, patriotChance: 0.15 },
     waves: [
       { en: [{ t: 'shahed', n: 3 }, { t: 'geran', n: 1 }], d: 55 },
@@ -134,6 +137,7 @@ export const MODES = {
     kalibr: { hp: 170, speed: 1.35, dmg: 65, reward: 36, targetDef: 0.08 },
     kh101: { hp: 130, speed: 1.55, dmg: 58, reward: 32, targetDef: 0.06, spawnChance: 0.16, count: [3, 4] },
     orlan: { hp: 55, speed: 0.75, reward: 30, spawnChance: 0.28, waveBuff: 0.30 },
+    ew: { fpvLossMul: 2.2, kukurznikAccMul: 0.64, duration: [580, 820] },
     iskander: { interval: [700, 1100], warnTicks: 85, dmg: 999, splashPct: 0.5, patriotChance: 0.22 },
     waves: [],
   },
