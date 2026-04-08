@@ -69,10 +69,12 @@ export function updateCombat(g) {
 
     if (tw.type === 'turret' || tw.type === 'mvg' || tw.type === 'hawk') {
       if (g.tick % 3 === 0) playShoot();
+      // MVG gets +15% accuracy vs fast targets (Lancet, Shahed-238) — its niche
+      const mvgFastBonus = (tw.type === 'mvg' && closest.speed > SLOW_SPEED_THRESHOLD) ? 0.15 : 0;
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: Math.round(tw.damage * dmgMul), speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
-        id: uid(), hitChance: (tw.hitChance + synergyAcc + accBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
+        id: uid(), hitChance: (tw.hitChance + synergyAcc + accBonus + mvgFastBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
         sourceTowerId: tw.id,
       });
     } else if (tw.type === 'gepard') {
@@ -154,8 +156,8 @@ export function updateCombat(g) {
     if (d < p.speed * TICK * 2) {
       p.hit = true;
       if (tgt) {
-        // Guided drones can dodge
-        const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile;
+        // Guided drones can dodge (IRIS-T and F-16 missiles bypass)
+        const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile && !p.isIRIST;
         // Weather accuracy already applied at projectile creation — no second multiplier
         if (!dodged && chance(p.hitChance || 0.5)) {
           tgt.hp -= p.damage;
