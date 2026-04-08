@@ -57,6 +57,11 @@ export function spawnEnemy(g, type) {
   const stealthChance = type === 'shahed' ? 0.20 : 0.15;
   const isStealth = canStealth && chance(stealthChance) && g.wave >= 3;
 
+  // Altitude cycling: some Shaheds climb to 4000-4500m (harder to hit, but less accurate attack)
+  const canAltCycle = (type === 'shahed') && g.wave >= 3 && !isStealth;
+  const altCycleChance = 0.20;
+  const hasAltCycle = canAltCycle && chance(altCycleChance);
+
   g.enemies.push({
     x: pos.x,
     y: pos.y,
@@ -73,6 +78,10 @@ export function spawnEnemy(g, type) {
     angle: Math.PI,
     dodgeChance: et.dodgeChance || 0,
     stealth: isStealth,
+    // Altitude cycling state
+    altCycle: hasAltCycle,
+    altitude: hasAltCycle ? 'climbing' : null, // null | 'climbing' | 'high' | 'diving' | 'low'
+    altTimer: hasAltCycle ? rnd(40, 80) : 0,   // ticks until next phase change
   });
 
   // Apply Orlan recon wave buff (if any)

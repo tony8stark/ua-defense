@@ -1,3 +1,25 @@
+// Civilian buildings rendering (small houses in the background)
+export function drawCivilianBuildings(ctx, g) {
+  for (const cb of g.civilianBuildings) {
+    if (cb.destroyed) {
+      // Destroyed: rubble
+      ctx.globalAlpha = 0.3;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🔥', cb.x, cb.y);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.globalAlpha = 0.4;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(cb.emoji, cb.x, cb.y);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
 // Building rendering
 export function drawBuildings(ctx, g) {
   for (const b of g.buildings) {

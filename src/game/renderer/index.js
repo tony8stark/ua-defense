@@ -1,6 +1,6 @@
 // Main draw orchestrator
 import { drawTerrain } from './terrain.js';
-import { drawBuildings } from './buildings.js';
+import { drawBuildings, drawCivilianBuildings } from './buildings.js';
 import { drawTowers, drawKukurzniki, drawFriendlyDrones, drawProjectiles } from './units.js';
 import { drawEnemies } from './enemies.js';
 import { drawEffects } from './effects.js';
@@ -13,6 +13,7 @@ export function draw(ctx, g, hover, selectedType) {
 
   drawTerrain(ctx, g);
   drawWeatherOverlay(ctx, g);
+  drawCivilianBuildings(ctx, g);
   drawBuildings(ctx, g);
   drawHoverPreview(ctx, hover, selectedType, g.mode);
   drawTowers(ctx, g);

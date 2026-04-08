@@ -52,6 +52,29 @@ export function drawEnemies(ctx, g) {
       ctx.restore();
     }
 
+    // Altitude indicator for high-flying Shaheds
+    if (en.altCycle && (en.altitude === 'high' || en.altitude === 'climbing')) {
+      const isHigh = en.altitude === 'high';
+      ctx.globalAlpha = isHigh ? 0.55 : 0.75; // high = more translucent
+      // Altitude label
+      ctx.font = "bold 6px 'Courier New'";
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#94a3b8';
+      const altM = isHigh ? '4500м' : '▲';
+      ctx.fillText(altM, en.x, en.y - en.sz - 12);
+      // Dotted circle showing altitude zone
+      if (isHigh) {
+        ctx.strokeStyle = 'rgba(148,163,184,0.25)';
+        ctx.lineWidth = 0.7;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.arc(en.x, en.y, en.sz + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // Special effects per type (glow, labels)
     if (en.type === 'lancet') {
       ctx.shadowColor = '#f87171';

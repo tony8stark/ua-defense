@@ -77,6 +77,7 @@ export function update(g) {
     g.weather = rollWeather(); // reset weather between waves
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
+    g.trivogaCooldown = 0; // Reset Тривога cooldown between waves
     addLog(g, `${getWaveCompleteQuip()} +${bonus}💰`);
     // Intel: show approximate composition of next wave
     if (g.wave < g.mode.waves.length) {
@@ -114,6 +115,27 @@ export function update(g) {
           g.floats.push({ x: en.x, y: en.y - 16, text: '👁️ ВИЯВЛЕНО', color: '#fbbf24', life: 50, ml: 50 });
           break;
         }
+      }
+    }
+  }
+
+  // Update altitude cycling for Shaheds
+  for (const en of g.enemies) {
+    if (!en.altCycle) continue;
+    en.altTimer -= TICK;
+    if (en.altTimer <= 0) {
+      if (en.altitude === 'climbing') {
+        en.altitude = 'high';
+        en.altTimer = rnd(80, 150); // stay high for a while
+      } else if (en.altitude === 'high') {
+        en.altitude = 'diving';
+        en.altTimer = rnd(30, 60);
+      } else if (en.altitude === 'diving') {
+        en.altitude = 'low';
+        en.altTimer = rnd(60, 120); // stay low for a while
+      } else {
+        en.altitude = 'climbing';
+        en.altTimer = rnd(40, 80);
       }
     }
   }
@@ -169,7 +191,18 @@ export function update(g) {
     en.angle = a;
 
     if (dist(en, to) < 28) {
-      to.hp = Math.max(0, to.hp - en.dmg);
+      // High-altitude attack: 30% chance to miss target entirely (inaccurate dive)
+      const isHighAttack = en.altitude === 'high' || en.altitude === 'climbing';
+      if (isHighAttack && chance(0.30)) {
+        addLog(g, '💨 Шахед промахнувся з висоти!');
+        g.floats.push({ x: en.x, y: en.y - 16, text: 'ПРОМАХ З ВИСОТИ', color: '#64748b', life: 45, ml: 45 });
+        en.hp = 0;
+        g.explosions.push({ x: en.x + rnd(-30, 30), y: en.y + rnd(-30, 30), r: 18, life: 20, ml: 20 });
+        continue;
+      }
+      // High-altitude attack that hits: -30% damage
+      const altDmgMul = isHighAttack ? 0.70 : 1.0;
+      to.hp = Math.max(0, to.hp - Math.round(en.dmg * altDmgMul));
 
       if (en.target.mode === 'tower') {
         const name = to.callsign ? `"${to.callsign}" (${DEF_META[to.type]?.name})` : DEF_META[to.type]?.name || 'Позицію';
@@ -180,6 +213,16 @@ export function update(g) {
         }
       } else if (en.target.mode === 'building') {
         addLog(g, `💥 ${to.name} під ударом! (${to.hp}/${to.maxHp})`);
+      }
+
+      // Damage nearby civilian buildings (splash)
+      for (const cb of g.civilianBuildings) {
+        if (cb.destroyed) continue;
+        if (dist(en, cb) < 40) {
+          cb.destroyed = true;
+          g.civilianHits++;
+          g.floats.push({ x: cb.x, y: cb.y - 10, text: '🏚️', color: '#ef4444', life: 50, ml: 50 });
+        }
       }
 
       g.explosions.push({ x: en.x, y: en.y, r: 28, life: 28, ml: 28 });

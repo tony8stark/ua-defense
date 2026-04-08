@@ -116,18 +116,28 @@ function impact(g, m) {
   const iw = g.iskanderWarn;
 
   // Direct hit on towers
+  const BUNKER_SNAP = 22;
   for (const tw of g.towers) {
     if (tw.hp <= 0) continue;
     const d = dist(tw, { x: iw.x, y: iw.y });
+    // Bunker reduces Iskander damage by 50% (direct hit becomes survivable splash)
+    const inBunker = g.city.terrainTiles?.some(t => t.type === 'bunker' && dist(tw, t) < BUNKER_SNAP);
     if (d < GRID * 0.6) {
-      tw.hp = 0;
-      if (tw.type === 'airfield') {
-        g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
+      if (inBunker) {
+        // Bunker absorbs direct hit: tower takes splash damage instead of instant death
+        tw.hp = Math.max(1, tw.hp - Math.round(tw.maxHp * m.iskander.splashPct));
+        addLog(g, `🛡️ Бліндаж витримав прямий удар!`);
+      } else {
+        tw.hp = 0;
+        if (tw.type === 'airfield') {
+          g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
+        }
+        markUnitDestroyed(g, tw.id);
+        addLog(g, `🚀 ${getIskanderQuip('hit')}`);
       }
-      markUnitDestroyed(g, tw.id);
-      addLog(g, `🚀 ${getIskanderQuip('hit')}`);
     } else if (d < GRID * 1.6) {
-      tw.hp = Math.max(0, tw.hp - Math.round(tw.maxHp * m.iskander.splashPct));
+      const splashDmg = Math.round(tw.maxHp * m.iskander.splashPct * (inBunker ? 0.5 : 1));
+      tw.hp = Math.max(0, tw.hp - splashDmg);
       if (tw.hp <= 0) {
         markUnitDestroyed(g, tw.id);
         if (tw.type === 'airfield') g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
@@ -140,6 +150,15 @@ function impact(g, m) {
     if (b.hp <= 0) continue;
     if (dist(b, { x: iw.x, y: iw.y }) < GRID * 1.2) {
       b.hp = Math.max(0, b.hp - 30);
+    }
+  }
+
+  // Damage nearby civilian buildings
+  for (const cb of g.civilianBuildings) {
+    if (cb.destroyed) continue;
+    if (dist(cb, { x: iw.x, y: iw.y }) < GRID * 2) {
+      cb.destroyed = true;
+      g.civilianHits++;
     }
   }
 

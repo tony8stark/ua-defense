@@ -13,6 +13,58 @@ export function drawTerrain(ctx, g) {
   } else if (city.terrain === 'urban') {
     drawUrbanTerrain(ctx, W, H, city.placeZone, t);
   }
+
+  // Draw terrain tiles (elevation, bunker)
+  if (city.terrainTiles) {
+    drawTerrainTiles(ctx, city.terrainTiles, t);
+  }
+}
+
+function drawTerrainTiles(ctx, tiles, t) {
+  for (const tile of tiles) {
+    ctx.save();
+    if (tile.type === 'elevation') {
+      // Raised area: lighter patch with contour arcs
+      const rg = ctx.createRadialGradient(tile.x, tile.y, 4, tile.x, tile.y, 26);
+      rg.addColorStop(0, 'rgba(74,222,128,0.10)');
+      rg.addColorStop(0.7, 'rgba(74,222,128,0.04)');
+      rg.addColorStop(1, 'rgba(74,222,128,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.arc(tile.x, tile.y, 26, 0, Math.PI * 2);
+      ctx.fill();
+      // Contour lines
+      ctx.strokeStyle = 'rgba(74,222,128,0.12)';
+      ctx.lineWidth = 0.7;
+      for (let r = 12; r <= 24; r += 6) {
+        ctx.beginPath();
+        ctx.arc(tile.x, tile.y, r, -0.6, 2.2);
+        ctx.stroke();
+      }
+      // Label
+      ctx.font = "7px 'Courier New'";
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(74,222,128,0.35)';
+      ctx.fillText('▲ ' + tile.label, tile.x, tile.y - 28);
+    } else if (tile.type === 'bunker') {
+      // Fortified position: dark rectangular shelter
+      ctx.fillStyle = 'rgba(100,116,139,0.12)';
+      ctx.fillRect(tile.x - 16, tile.y - 10, 32, 20);
+      ctx.fillRect(tile.x - 10, tile.y - 14, 20, 28);
+      // Reinforcement lines
+      ctx.strokeStyle = 'rgba(100,116,139,0.18)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeRect(tile.x - 18, tile.y - 12, 36, 24);
+      ctx.setLineDash([]);
+      // Label
+      ctx.font = "7px 'Courier New'";
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(148,163,184,0.35)';
+      ctx.fillText('\u26E8 ' + tile.label, tile.x, tile.y - 18);
+    }
+    ctx.restore();
+  }
 }
 
 function drawCoastalTerrain(ctx, W, H, landX, zone, t) {

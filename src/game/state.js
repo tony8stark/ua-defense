@@ -13,10 +13,19 @@ export function createGameState(city, mode) {
     id: uid(),
   }));
 
+  // Initialize civilian buildings (small houses, destructible by attacks)
+  const civilianBuildings = (city.civilianBuildings || []).map(cb => ({
+    ...cb,
+    hp: 1,
+    destroyed: false,
+    id: uid(),
+  }));
+
   return {
     city,
     mode,
     buildings,
+    civilianBuildings,
     towers: [],
     enemies: [],
     projectiles: [],
@@ -64,6 +73,8 @@ export function createGameState(city, mode) {
     patriotInterceptions: 0,
     patriotMax: 3,
     patriotAnim: null,
+    // Civilian damage
+    civilianHits: 0,
   };
 }
 
@@ -95,6 +106,7 @@ export function getUIState(g) {
     trivogaActive: g.trivogaActive > 0,
     trivogaCooldown: g.trivogaCooldown,
     towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
+    civilianHits: g.civilianHits || 0,
   };
 }
 

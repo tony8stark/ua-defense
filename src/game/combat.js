@@ -14,7 +14,9 @@ export function updateCombat(g) {
   // TURRETS, CREWS, HAWK, GEPARD, IRIS-T
   const SLOW_SPEED_THRESHOLD = 1.5;
   const trivogaMul = getTrivogaFireRateMul(g);
+  const trivogaOn = g.trivogaActive > 0;
   const SYNERGY_RANGE = 56;
+  const TERRAIN_SNAP = 22; // tower must be within 22px of terrain tile center
   const bb = getBuildingBonuses(g); // building bonuses (range, damage, accuracy)
 
   for (const tw of g.towers) {
@@ -29,10 +31,14 @@ export function updateCombat(g) {
 
     // Find target based on tower type
     let closest = null, closestDist = Infinity;
-    const effectiveRange = tw.range * (weather.rangeMul || 1) * (1 + bb.range);
+    // Terrain bonus: elevation gives +15% range
+    const onElevation = g.city.terrainTiles?.some(t => t.type === 'elevation' && dist(tw, t) < TERRAIN_SNAP);
+    const effectiveRange = tw.range * (weather.rangeMul || 1) * (1 + bb.range) * (onElevation ? 1.15 : 1);
     for (const en of g.enemies) {
       // Stealth enemies can't be targeted
       if (en.stealth) continue;
+      // High-altitude Shaheds: crew (FPV) and kukurzniki can't reach them
+      if (en.altitude === 'high' && (tw.type === 'crew')) continue;
       // Crew skips Shahed-238
       if (tw.type === 'crew' && en.type === 'shahed238') continue;
       // HAWK only targets slow enemies (Shahed, Geran, Kalibr, Orlan, Kh-101)
@@ -71,15 +77,25 @@ export function updateCombat(g) {
       if (g.tick % 3 === 0) playShoot();
       // MVG gets +15% accuracy vs fast targets (Lancet, Shahed-238) — its niche
       const mvgFastBonus = (tw.type === 'mvg' && closest.speed > SLOW_SPEED_THRESHOLD) ? 0.15 : 0;
-      g.projectiles.push({
-        x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
-        damage: Math.round(tw.damage * dmgMul), speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
-        id: uid(), hitChance: (tw.hitChance + synergyAcc + accBonus + mvgFastBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
-        sourceTowerId: tw.id,
-      });
+      // Тривога bonuses: MVG +20% acc, HAWK 100% hit
+      const trivogaAcc = trivogaOn ? (tw.type === 'mvg' ? 0.20 : tw.type === 'hawk' ? 1.0 : 0) : 0;
+      const baseHit = tw.type === 'hawk' && trivogaOn ? 1.0
+        : (tw.hitChance + synergyAcc + accBonus + mvgFastBonus + trivogaAcc) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1);
+      // Тривога: turret fires at up to 3 targets simultaneously
+      const targets = (tw.type === 'turret' && trivogaOn) ? findMultiTargets(g, tw, effectiveRange, 3) : [closest];
+      for (const tgt of targets) {
+        g.projectiles.push({
+          x: tw.x, y: tw.y, tid: tgt.id, tx: tgt.x, ty: tgt.y,
+          damage: Math.round(tw.damage * dmgMul), speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
+          id: uid(), hitChance: baseHit,
+          sourceTowerId: tw.id,
+        });
+      }
     } else if (tw.type === 'gepard') {
       playShoot();
-      for (let i = 0; i < 2; i++) {
+      // Тривога: Gepard fires 3 projectiles instead of 2
+      const burstCount = trivogaOn ? 3 : 2;
+      for (let i = 0; i < burstCount; i++) {
         g.projectiles.push({
           x: tw.x + rnd(-3, 3), y: tw.y + rnd(-3, 3),
           tid: closest.id, tx: closest.x + rnd(-5, 5), ty: closest.y + rnd(-5, 5),
@@ -90,10 +106,13 @@ export function updateCombat(g) {
       }
     } else if (tw.type === 'irist') {
       playFPVLaunch();
+      // Тривога: IRIS-T gets 100% hit chance
+      const iristHit = trivogaOn ? 1.0
+        : Math.min(0.98, (tw.hitChance + synergyAcc + accBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1));
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: tw.damage, speed: 10, color: DEF_META.irist.color,
-        id: uid(), hitChance: Math.min(0.98, (tw.hitChance + synergyAcc + accBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1)),
+        id: uid(), hitChance: iristHit,
         sourceTowerId: tw.id, isIRIST: true,
       });
     } else if (tw.type === 'crew') {
@@ -106,11 +125,16 @@ export function updateCombat(g) {
         });
       } else {
         playFPVLaunch();
-        g.friendlyDrones.push({
-          x: tw.x, y: tw.y, tid: closest.id, damage: tw.damage, speed: 3.2, id: uid(),
-          color: DEF_META.crew.color, trail: [], angle: 0, hitChance: tw.hitChance, lost: false,
-          sourceTowerId: tw.id,
-        });
+        // Тривога: Crew launches 2 FPV drones per shot
+        const fpvCount = trivogaOn ? 2 : 1;
+        for (let f = 0; f < fpvCount; f++) {
+          g.friendlyDrones.push({
+            x: tw.x + (f > 0 ? rnd(-5, 5) : 0), y: tw.y + (f > 0 ? rnd(-5, 5) : 0),
+            tid: closest.id, damage: tw.damage, speed: 3.2, id: uid(),
+            color: DEF_META.crew.color, trail: [], angle: 0, hitChance: tw.hitChance, lost: false,
+            sourceTowerId: tw.id,
+          });
+        }
       }
     }
   }
@@ -133,6 +157,7 @@ export function updateCombat(g) {
     for (const en of g.enemies) {
       if (en.stealth) continue;
       if (en.type === 'shahed238') continue;
+      if (en.altitude === 'high') continue; // Can't reach high-altitude targets
       const d = dist(k, en);
       if (d < kRange && d < closestDist) { closest = en; closestDist = d; }
     }
@@ -141,7 +166,7 @@ export function updateCombat(g) {
       g.projectiles.push({
         x: k.x, y: k.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: k.damage, speed: 5, color: DEF_META.airfield.color,
-        id: uid(), hitChance: k.hitChance * ew.kukurznikAccMul * (weather.accuracyMul || 1),
+        id: uid(), hitChance: k.hitChance * ew.kukurznikAccMul * (weather.accuracyMul || 1) * (trivogaOn ? 2.0 : 1.0),
         sourceTowerId: k.towerId,
       });
     }
@@ -158,8 +183,10 @@ export function updateCombat(g) {
       if (tgt) {
         // Guided drones can dodge (IRIS-T and F-16 missiles bypass)
         const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile && !p.isIRIST;
+        // High-altitude targets: -40% accuracy for projectiles (IRIS-T unaffected)
+        const altPenalty = (tgt.altitude === 'high' && !p.isIRIST) ? 0.60 : 1.0;
         // Weather accuracy already applied at projectile creation — no second multiplier
-        if (!dodged && chance(p.hitChance || 0.5)) {
+        if (!dodged && chance((p.hitChance || 0.5) * altPenalty)) {
           tgt.hp -= p.damage;
           g.explosions.push({ x: p.tx, y: p.ty, r: 10, life: 12, ml: 12 });
           // Track kill on source tower
@@ -257,6 +284,19 @@ export function updateCombat(g) {
     }
   }
   g.friendlyDrones = g.friendlyDrones.filter(d => !d.dead);
+}
+
+// Helper: find up to N enemies in range (for Тривога turret multi-target)
+function findMultiTargets(g, tw, range, max) {
+  const targets = [];
+  for (const en of g.enemies) {
+    if (en.stealth) continue;
+    if (dist(tw, en) < range) {
+      targets.push({ en, d: dist(tw, en) });
+    }
+  }
+  targets.sort((a, b) => a.d - b.d);
+  return targets.slice(0, max).map(t => t.en);
 }
 
 function addFloat(g, x, y, text, color) {
