@@ -22,7 +22,7 @@ export const MODES = {
     guided: { hp: 140, speed: 0.85, dmg: 50, reward: 25, targetDef: 0.90, dodgeChance: 0.30 },
     kalibr: { hp: 100, speed: 1.1, dmg: 50, reward: 30, targetDef: 0 },
     kh101: { hp: 80, speed: 1.3, dmg: 40, reward: 25, targetDef: 0, spawnChance: 0.12, count: [2, 3] },
-    orlan: { hp: 35, speed: 0.6, reward: 8, spawnChance: 0.20, waveBuff: 0.25 },
+    orlan: { hp: 35, speed: 0.6, reward: 25, spawnChance: 0.20, waveBuff: 0.25 },
     iskander: { interval: [1400, 2000], warnTicks: 100, dmg: 999, splashPct: 0.5, patriotChance: 0.35 },
     waves: [
       { en: [{ t: 'shahed', n: 4 }], d: 60 },
@@ -57,7 +57,7 @@ export const MODES = {
     guided: { hp: 250, speed: 0.75, dmg: 60, reward: 30, targetDef: 0.95, dodgeChance: 0.35 },
     kalibr: { hp: 160, speed: 1.3, dmg: 60, reward: 35, targetDef: 0.05 },
     kh101: { hp: 120, speed: 1.5, dmg: 55, reward: 30, targetDef: 0.05, spawnChance: 0.15, count: [3, 4] },
-    orlan: { hp: 50, speed: 0.7, reward: 10, spawnChance: 0.25, waveBuff: 0.30 },
+    orlan: { hp: 50, speed: 0.7, reward: 28, spawnChance: 0.25, waveBuff: 0.30 },
     iskander: { interval: [800, 1300], warnTicks: 90, dmg: 999, splashPct: 0.5, patriotChance: 0.25 },
     waves: [
       { en: [{ t: 'shahed', n: 5 }], d: 55 },
@@ -94,7 +94,7 @@ export const MODES = {
     guided: { hp: 350, speed: 0.70, dmg: 80, reward: 35, targetDef: 0.98, dodgeChance: 0.40 },
     kalibr: { hp: 220, speed: 1.5, dmg: 70, reward: 40, targetDef: 0.10 },
     kh101: { hp: 160, speed: 1.7, dmg: 65, reward: 35, targetDef: 0.10, spawnChance: 0.18, count: [3, 5] },
-    orlan: { hp: 65, speed: 0.8, reward: 12, spawnChance: 0.30, waveBuff: 0.35 },
+    orlan: { hp: 65, speed: 0.8, reward: 30, spawnChance: 0.30, waveBuff: 0.35 },
     iskander: { interval: [500, 900], warnTicks: 75, dmg: 999, splashPct: 0.5, patriotChance: 0.15 },
     waves: [
       { en: [{ t: 'shahed', n: 3 }, { t: 'geran', n: 1 }], d: 55 },
