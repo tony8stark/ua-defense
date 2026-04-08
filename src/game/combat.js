@@ -13,7 +13,8 @@ export function updateCombat(g) {
 
   // TURRETS, CREWS, HAWK, GEPARD, IRIS-T
   const SLOW_SPEED_THRESHOLD = 1.5;
-  const trivogaMul = getTrivogaFireRateMul(g); // 0.5 when active = cooldowns drain 2x faster
+  const trivogaMul = getTrivogaFireRateMul(g);
+  const SYNERGY_RANGE = 56; // ~2 grid cells (GRID=28)
 
   for (const tw of g.towers) {
     if (tw.hp <= 0) {
@@ -48,33 +49,43 @@ export function updateCombat(g) {
     tw.angle = ang(tw, closest);
     tw.cooldown = tw.fireRate;
 
+    // Synergy: count unique neighboring tower types within range
+    let synergyAcc = 0;
+    const neighborTypes = new Set();
+    for (const other of g.towers) {
+      if (other.id === tw.id || other.hp <= 0 || other.type === 'decoy') continue;
+      if (dist(tw, other) < SYNERGY_RANGE && other.type !== tw.type) {
+        neighborTypes.add(other.type);
+      }
+    }
+    // +5% accuracy per unique neighbor type (max +15%)
+    synergyAcc = Math.min(0.15, neighborTypes.size * 0.05);
+
     if (tw.type === 'turret' || tw.type === 'hawk') {
       if (g.tick % 3 === 0) playShoot();
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: tw.damage, speed: tw.type === 'hawk' ? 8 : 7, color: DEF_META[tw.type].color,
-        id: uid(), hitChance: tw.hitChance * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
+        id: uid(), hitChance: (tw.hitChance + synergyAcc) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1),
         sourceTowerId: tw.id,
       });
     } else if (tw.type === 'gepard') {
-      // Gepard: rapid burst, 2 projectiles per shot
       playShoot();
       for (let i = 0; i < 2; i++) {
         g.projectiles.push({
           x: tw.x + rnd(-3, 3), y: tw.y + rnd(-3, 3),
           tid: closest.id, tx: closest.x + rnd(-5, 5), ty: closest.y + rnd(-5, 5),
           damage: tw.damage, speed: 9, color: DEF_META.gepard.color,
-          id: uid(), hitChance: tw.hitChance * (weather.accuracyMul || 1),
+          id: uid(), hitChance: (tw.hitChance + synergyAcc) * (weather.accuracyMul || 1),
           sourceTowerId: tw.id,
         });
       }
     } else if (tw.type === 'irist') {
-      // IRIS-T: single guaranteed-kill missile
-      playFPVLaunch(); // reuse whoosh sound
+      playFPVLaunch();
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: tw.damage, speed: 10, color: DEF_META.irist.color,
-        id: uid(), hitChance: tw.hitChance,
+        id: uid(), hitChance: Math.min(0.98, tw.hitChance + synergyAcc),
         sourceTowerId: tw.id, isIRIST: true,
       });
     } else if (tw.type === 'crew') {

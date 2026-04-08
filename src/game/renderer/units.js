@@ -1,7 +1,30 @@
 // Tower, kukurzniki, FPV drone rendering
 import { DEF_META } from '../../data/units.js';
 
+const SYNERGY_RANGE = 56;
+
 export function drawTowers(ctx, g) {
+  // Draw synergy links first (behind towers)
+  const alive = g.towers.filter(t => t.hp > 0 && t.type !== 'decoy');
+  for (let i = 0; i < alive.length; i++) {
+    for (let j = i + 1; j < alive.length; j++) {
+      const a = alive[i], b = alive[j];
+      if (a.type !== b.type) {
+        const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        if (d < SYNERGY_RANGE) {
+          ctx.strokeStyle = '#4ade8012';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 4]);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+  }
+
   for (const tw of g.towers) {
     const mc = DEF_META[tw.type];
     const alive = tw.hp > 0;

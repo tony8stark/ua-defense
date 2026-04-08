@@ -64,6 +64,7 @@ export default function MainMenu({ onSelectCity, onShowLeaderboard }) {
             <div>
               <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, color: '#4ade80' }}>Оборона</span>
               <div>🔫 Турель · 🎮 FPV · 🛫 Аеродром</div>
+              <div>🦅 HAWK · 🐆 Gepard · 💎 IRIS-T</div>
             </div>
             <div>
               <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, color: '#ef4444' }}>Загрози</span>
@@ -73,7 +74,20 @@ export default function MainMenu({ onSelectCity, onShowLeaderboard }) {
                 <span style={{ color: '#e2e8f0' }}>Geran</span> ·{' '}
                 <span style={{ color: '#f87171' }}>Lancet</span>
               </div>
+              <div>
+                <span style={{ color: '#38bdf8' }}>Kalibr</span> ·{' '}
+                <span style={{ color: '#c084fc' }}>Kh-101</span> ·{' '}
+                <span style={{ color: '#6ee7b7' }}>Orlan</span> ·{' '}
+                <span style={{ color: '#ff6b6b' }}>Iskander</span>
+              </div>
             </div>
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: '#64748b' }}>🚨 Тривога!</span>
+            <span style={{ fontSize: 11, color: '#64748b' }}>🛡️ Patriot</span>
+            <span style={{ fontSize: 11, color: '#64748b' }}>🛩️ F-16</span>
+            <span style={{ fontSize: 11, color: '#64748b' }}>🔥 Combo</span>
+            <span style={{ fontSize: 11, color: '#64748b' }}>📡 РЕБ</span>
           </div>
         </div>
 

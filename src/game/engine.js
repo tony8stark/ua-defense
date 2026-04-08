@@ -9,6 +9,11 @@ import { addLog, markUnitDestroyed, updateCombo, updateTrivoga } from './state.j
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
 import { getWaveStartQuip, getWaveCompleteQuip, getWeatherQuip, getIntelQuip } from '../data/battleQuips.js';
 
+const ENEMY_SHORT = {
+  shahed: 'Шхд', shahed238: '238', geran: 'Гер', lancet: 'Лнц',
+  guided: 'Кер', kalibr: 'Клб', kh101: 'Кх', orlan: 'Орл',
+};
+
 // Start a wave
 export function startWave(g) {
   if (g.waveActive || g.wave >= g.mode.waves.length) return false;
@@ -69,9 +74,24 @@ export function update(g) {
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
     addLog(g, `${getWaveCompleteQuip()} +${bonus}💰`);
-    // Intel quip between waves (not on last wave)
+    // Intel: show approximate composition of next wave
     if (g.wave < g.mode.waves.length) {
-      setTimeout(() => { addLog(g, getIntelQuip()); }, 1500);
+      setTimeout(() => {
+        addLog(g, getIntelQuip());
+        // Show fuzzy enemy count breakdown
+        const next = g.mode.waves[g.wave];
+        if (next) {
+          const isHell = g.mode.iskander.interval[0] < 600;
+          const fuzz = isHell ? 0.4 : 0.2;
+          const parts = next.en
+            .filter(e => !(e.t === 'kalibr' && g.city.id !== 'odesa'))
+            .map(e => {
+              const approx = Math.max(1, Math.round(e.n * (1 + (Math.random() * 2 - 1) * fuzz)));
+              return `${ENEMY_SHORT[e.t] || e.t}:~${approx}`;
+            });
+          addLog(g, `📋 Прогноз: ${parts.join(' ')}`);
+        }
+      }, 1500);
     }
     playWaveComplete();
     if (g.wave >= g.mode.waves.length) return 'won';
