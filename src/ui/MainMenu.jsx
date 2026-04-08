@@ -3,7 +3,7 @@ import { CITIES } from '../data/cities.js';
 export default function MainMenu({ onSelectCity, onShowLeaderboard, onShowTech }) {
   return (
     <div style={{
-      minHeight: '100dvh', display: 'flex', alignItems: 'safe center', justifyContent: 'center',
+      height: '100dvh', display: 'flex', alignItems: 'safe center', justifyContent: 'center',
       padding: '24px 12px', overflowY: 'auto',
       background: 'linear-gradient(160deg, #0a1628, #0f2b3d 40%, #1a2a1a 70%, #0c1222)',
     }}>

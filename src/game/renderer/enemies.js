@@ -1,5 +1,6 @@
 // Enemy drone rendering with SVG sprites
 import { ENEMY_SPRITES, drawSprite } from '../../data/sprites.js';
+import { getEnemyRenderAngle } from '../../data/enemies.js';
 
 export function drawEnemies(ctx, g) {
   for (const en of g.enemies) {
@@ -33,13 +34,14 @@ export function drawEnemies(ctx, g) {
     // Draw sprite
     const sprite = ENEMY_SPRITES[en.type];
     const scale = en.sz / 14; // normalize to base size
+    const renderAngle = getEnemyRenderAngle(en.type, en.angle);
     if (sprite && sprite.complete) {
-      drawSprite(ctx, sprite, en.x, en.y, en.angle, scale);
+      drawSprite(ctx, sprite, en.x, en.y, renderAngle, scale);
     } else {
       // Fallback: original procedural rendering
       ctx.save();
       ctx.translate(en.x, en.y);
-      ctx.rotate(en.angle);
+      ctx.rotate(renderAngle);
       const sz = en.sz;
       ctx.fillStyle = en.color;
       ctx.beginPath();

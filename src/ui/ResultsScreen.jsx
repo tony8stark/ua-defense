@@ -77,7 +77,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
 
   return (
     <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #0a1628, #0c1222)',
+      height: '100dvh', background: 'linear-gradient(160deg, #0a1628, #0c1222)',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '24px 16px', overflowY: 'auto',
     }}>

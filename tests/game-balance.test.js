@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { MODES } from '../src/data/difficulty.js';
+import { getEWMultipliers } from '../src/game/events.js';
 import { flatWave } from '../src/game/spawner.js';
+import { shouldRevealStealthEnemy } from '../src/game/stealth.js';
 import {
   createGameState,
   registerUnit,
@@ -196,5 +200,81 @@ test('flatWave keeps fully shock-heavy waves oppressive when no calmer targets e
   assert.ok(
     sequence.slice(0, 4).every(type => (PRESSURE[type] || 1) >= 2),
     `expected oppressive opener to remain possible, got ${sequence.slice(0, 4).join(', ')}`,
+  );
+});
+
+test('EW scales by difficulty without deleting FPV play in realistic', () => {
+  const trainingEW = getEWMultipliers({ ewActive: { timer: 1 }, mode: MODES.training });
+  const realisticEW = getEWMultipliers({ ewActive: { timer: 1 }, mode: MODES.realistic });
+  const hellEW = getEWMultipliers({ ewActive: { timer: 1 }, mode: MODES.hell });
+
+  const realisticLossRate = MODES.realistic.crew.lossChance * realisticEW.fpvLossMul;
+  const hellLossRate = MODES.hell.crew.lossChance * hellEW.fpvLossMul;
+
+  assert.ok(trainingEW.fpvLossMul < realisticEW.fpvLossMul, `training EW should be softer than realistic: ${trainingEW.fpvLossMul} vs ${realisticEW.fpvLossMul}`);
+  assert.ok(realisticEW.fpvLossMul < hellEW.fpvLossMul, `realistic EW should stay below hell: ${realisticEW.fpvLossMul} vs ${hellEW.fpvLossMul}`);
+  assert.ok(realisticLossRate < 0.5, `realistic EW should disrupt FPV, not shut it off: ${realisticLossRate}`);
+  assert.ok(hellLossRate > realisticLossRate, `hell EW should remain harsher than realistic: ${hellLossRate} vs ${realisticLossRate}`);
+  assert.ok(realisticEW.kukurznikAccMul >= 0.6, `realistic EW should not collapse airfield accuracy completely: ${realisticEW.kukurznikAccMul}`);
+});
+
+test('iskander scramble is single-use and updates mobile patrol anchors', () => {
+  const appSource = readFileSync(resolve('src/App.jsx'), 'utf8');
+
+  assert.match(appSource, /iw\.scrambled\)\s*return/, 'scramble should stop repeated reposition abuse on the same warning');
+  assert.match(appSource, /iw\.scrambled\s*=\s*true/, 'scramble should mark the warning as consumed after the first evacuation');
+  assert.match(appSource, /t\.type === 'mvg'/, 'scramble should handle mobile patrol units explicitly');
+  assert.match(appSource, /t\.originX\s*=\s*t\.x/, 'scramble should update MVG patrol origin after evacuation');
+  assert.match(appSource, /t\.originY\s*=\s*t\.y/, 'scramble should update MVG patrol origin after evacuation');
+});
+
+test('tutorial copy explains one-shot iskander scramble and FPV blind spots', () => {
+  const tutorialSource = readFileSync(resolve('src/ui/Tutorial.jsx'), 'utf8');
+
+  assert.match(tutorialSource, /лише один раз/, 'tutorial should warn that Iskander evacuation is a one-shot response');
+  assert.match(tutorialSource, /не бачать реактивні Shahed-238/, 'tutorial should mention that FPV crews cannot target Shahed-238');
+});
+
+test('low-flying shahed can stay hidden deep into the map and only pop up near the target', () => {
+  const city = {
+    id: 'kyiv',
+    width: 900,
+    height: 600,
+    buildings: [{ key: 'center', name: 'Center', x: 820, y: 300, maxHp: 100 }],
+    civilianBuildings: [],
+  };
+  const mode = {
+    startMoney: 400,
+    waves: [{ en: [], d: 50 }],
+    iskander: { interval: [100, 120] },
+  };
+  const g = createGameState(city, mode);
+
+  g.towers.push({ id: 1, type: 'turret', x: 260, y: 300, hp: 100, maxHp: 100 });
+
+  const hiddenMidCity = {
+    id: 10,
+    type: 'shahed',
+    x: 330,
+    y: 300,
+    hp: 70,
+    maxHp: 70,
+    stealth: true,
+    target: { mode: 'building', key: 'center' },
+  };
+  const nearTarget = {
+    ...hiddenMidCity,
+    x: 700,
+  };
+
+  assert.equal(
+    shouldRevealStealthEnemy(g, hiddenMidCity),
+    false,
+    'low-flying shahed should stay hidden after crossing into defended airspace if it is still far from the target',
+  );
+  assert.equal(
+    shouldRevealStealthEnemy(g, nearTarget),
+    true,
+    'low-flying shahed should reveal once it is closing on the final target area',
   );
 });

@@ -3,7 +3,7 @@
 export default function TechPage({ onBack }) {
   return (
     <div style={{
-      minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '24px 16px', overflowY: 'auto',
       background: 'linear-gradient(160deg, #0a1628, #0c1222)',
     }}>
@@ -192,7 +192,7 @@ const MECHANICS = [
   },
   {
     emoji: '👻', name: 'Низькі цілі', color: '#94a3b8',
-    desc: 'Деякі Shahed та Geran летять низько і невидимі до виявлення на відстані 120px від вежі.',
+    desc: 'Деякі Shahed та Geran летять дуже низько і можуть лишатися невидимими майже до самої цілі. Іноді виринають лише впритул до ППО.',
   },
   {
     emoji: '🏔️', name: 'Висота', color: '#4ade80',
@@ -219,7 +219,7 @@ const EVENTS = [
   },
   {
     emoji: '📡', name: 'Ворожий РЕБ', color: '#f59e0b',
-    desc: 'Вмикається посеред хвилі. FPV втрачають зв\'язок в 3 рази частіше, кукурузник точність -50%.',
+    desc: 'Вмикається посеред хвилі. FPV помітно частіше втрачають зв\'язок, а кукурузник гірше влучає. На вищих складностях тиск сильніший.',
   },
   {
     emoji: '✈️', name: 'Ту-95МС', color: '#c084fc',

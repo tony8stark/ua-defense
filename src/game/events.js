@@ -143,7 +143,10 @@ export function trySpawnEW(g) {
     return;
   }
 
-  g.ewActive = { timer: rnd(600, 950), maxTimer: 950 };
+  const ewCfg = g.mode.ew || {};
+  const [minDuration, maxDuration] = ewCfg.duration || [600, 950];
+  const duration = rnd(minDuration, maxDuration);
+  g.ewActive = { timer: duration, maxTimer: duration };
   g.ewCooldown = 2;
   addLog(g, `📡 ${getEWQuip('start')}`);
   playEWBuzz();
@@ -212,9 +215,10 @@ export function drawEWOverlay(ctx, g) {
 // Get EW multipliers for combat
 export function getEWMultipliers(g) {
   if (!g.ewActive) return { fpvLossMul: 1, kukurznikAccMul: 1 };
+  const ewCfg = g.mode?.ew || {};
   return {
-    fpvLossMul: 3.0,      // FPV loses signal 3x more often
-    kukurznikAccMul: 0.5,  // kukurznik accuracy halved
+    fpvLossMul: ewCfg.fpvLossMul || 3.0,
+    kukurznikAccMul: ewCfg.kukurznikAccMul || 0.5,
   };
 }
 

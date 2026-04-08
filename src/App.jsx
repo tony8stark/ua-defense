@@ -321,21 +321,32 @@ export default function App() {
     const g = gRef.current;
     if (!g || !g.iskanderWarn) return;
     const iw = g.iskanderWarn;
+    if (iw.scrambled) return;
     if (dist(pos, { x: iw.x, y: iw.y }) > GRID * 2) return; // must click near warning
 
+    const SAFE_RADIUS = GRID * 1.95;
     let moved = 0;
     for (const t of g.towers) {
       if (t.hp <= 0) continue;
-      if (dist(t, { x: iw.x, y: iw.y }) < GRID * 1.8) {
-        // Move tower one cell away from impact
-        const dx = t.x - iw.x;
-        const dy = t.y - iw.y;
-        const d = Math.sqrt(dx * dx + dy * dy) || 1;
-        const newX = t.x + Math.round(dx / d) * GRID;
-        const newY = t.y + Math.round(dy / d) * GRID;
-        // Clamp to grid
+      const currentDist = dist(t, { x: iw.x, y: iw.y });
+      if (currentDist < GRID * 1.8) {
+        let dx = t.x - iw.x;
+        let dy = t.y - iw.y;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+          dx = t.x >= g.city.width / 2 ? 1 : -1;
+          dy = t.y >= g.city.height / 2 ? 1 : -1;
+        }
+        const baseDist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const moveDist = Math.max(GRID, SAFE_RADIUS - currentDist);
+        const newX = t.x + (dx / baseDist) * moveDist;
+        const newY = t.y + (dy / baseDist) * moveDist;
+
         t.x = Math.max(GRID / 2, Math.min(g.city.width - GRID / 2, newX));
         t.y = Math.max(GRID / 2, Math.min(g.city.height - GRID / 2, newY));
+        if (t.type === 'mvg') {
+          t.originX = t.x;
+          t.originY = t.y;
+        }
         // Move kukurznik orbit center too
         if (t.type === 'airfield') {
           const k = g.kukurzniki.find(ku => ku.towerId === t.id);
@@ -345,6 +356,7 @@ export default function App() {
       }
     }
     if (moved > 0) {
+      iw.scrambled = true;
       addLog(g, `🏃 ${getIskanderQuip('scramble')}`);
       syncUI();
     }

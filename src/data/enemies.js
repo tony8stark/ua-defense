@@ -20,3 +20,12 @@ export const ENEMY_SIZES = {
   kalibr: 16, // large cruise missile
   kh101: 15,  // air-launched cruise missile
 };
+
+const ENEMY_RENDER_ANGLE_OFFSETS = {
+  // PNG art for Shahed faces the opposite direction from the SVG-based enemy sprites.
+  shahed: Math.PI,
+};
+
+export function getEnemyRenderAngle(type, angle) {
+  return angle + (ENEMY_RENDER_ANGLE_OFFSETS[type] || 0);
+}
