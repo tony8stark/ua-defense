@@ -1,20 +1,48 @@
 // Main game update loop: orchestrates spawning, movement, combat, effects
 import { TICK, dist, ang, rnd, chance, updateTick } from './physics.js';
+import {
+  advanceEnemyNavigation,
+  createGuidedWaypoints,
+  getEnemyNavPoint,
+  isEnemyInCruiseIngress,
+} from './enemy-ai.js';
+import { getWaveUpkeepCost } from './economy.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
-import { updateIskander } from './iskander.js';
+import { updateIskander, updatePatriotAnim } from './iskander.js';
 import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
 import { shouldRevealStealthEnemy } from './stealth.js';
 import { getWaveDef, hasMoreWaves } from './waves.js';
 import { DEF_META } from '../data/units.js';
-import { addLog, markUnitDestroyed, updateCombo, updateTrivoga, getBuildingBonuses } from './state.js';
+import { addLog, markUnitDestroyed, updateBattleCallout, updateCombo, updateTrivoga, getBuildingBonuses } from './state.js';
 import { playWaveComplete, playExplosion } from '../audio/SoundManager.js';
-import { getWaveStartQuip, getWaveCompleteQuip, getWeatherQuip, getIntelQuip } from '../data/battleQuips.js';
+import {
+  getBattleCalloutText,
+  getIntelQuip,
+  getUpkeepQuip,
+  getWaveCompleteQuip,
+  getWaveFundingQuip,
+  getWaveStartQuip,
+  getWeatherQuip,
+} from '../data/battleQuips.js';
 
 const ENEMY_SHORT = {
   shahed: 'Шхд', shahed238: '238', geran: 'Гер', lancet: 'Лнц',
   guided: 'Кер', kalibr: 'Клб', kh101: 'Кх', orlan: 'Орл',
 };
+
+function getTargetSignature(target) {
+  return target ? `${target.mode}:${target.id || target.key || ''}` : null;
+}
+
+function syncGuidedRoute(g, enemy, targetPoint) {
+  if (enemy.type !== 'guided' || !targetPoint) return;
+  const signature = getTargetSignature(enemy.target);
+  if (enemy.guidedPathTarget === signature && Array.isArray(enemy.guidedPath)) return;
+
+  enemy.guidedPath = createGuidedWaypoints(g.city, { x: enemy.x, y: enemy.y }, targetPoint);
+  enemy.guidedPathTarget = signature;
+}
 
 // Start a wave
 export function startWave(g) {
@@ -29,20 +57,26 @@ export function startWave(g) {
   // Apply Orlan recon buff (if any)
   if (g.nextWaveBuff > 1.0) {
     g._waveBuff = g.nextWaveBuff;
-    addLog(g, `⚠️ Ворог використав розвідку! HP ворогів x${g.nextWaveBuff.toFixed(1)}`);
+    addLog(g, `⚠️ Ворог використав розвідку! HP ворогів x${g.nextWaveBuff.toFixed(1)}`, {
+      broadcast: { text: getBattleCalloutText('reconBuff', g.mode), life: 64, priority: 2, color: '#fde68a', accent: '#f59e0b' },
+    });
     g.nextWaveBuff = 1.0;
   } else {
     g._waveBuff = 1.0;
   }
 
   // Roll new weather for this wave
-  g.weather = rollWeather();
+  g.weather = rollWeather(g.mode, g.wave);
   if (g.weather.id !== 'clear') {
     const wq = getWeatherQuip(g.weather.id);
-    addLog(g, wq || g.weather.label);
+    addLog(g, wq || g.weather.label, {
+      broadcast: { text: getBattleCalloutText(`weather:${g.weather.id}`, g.mode) || g.weather.label.toUpperCase(), life: 46, priority: 1, color: '#cbd5e1', accent: '#64748b' },
+    });
   }
 
-  addLog(g, getWaveStartQuip());
+  addLog(g, getWaveStartQuip(), {
+    broadcast: { text: getBattleCalloutText('waveStart', g.mode), life: 56, priority: 1, color: '#e2e8f0', accent: '#38bdf8' },
+  });
 
   // Track wave size for mid-wave events
   g._waveSize = g.spawnQueue.length;
@@ -60,6 +94,12 @@ export function startWave(g) {
 export function update(g) {
   g.tick++;
   updateTick(g);
+  updateBattleCallout(g);
+
+  if (g.patriotAnim?.freezeGameplay) {
+    updatePatriotAnim(g);
+    return null;
+  }
 
   // Spawn enemies from queue
   if (g.waveActive && g.spawnQueue.length > 0) {
@@ -76,12 +116,17 @@ export function update(g) {
     g.wave++;
     const bb = getBuildingBonuses(g);
     const bonus = g.mode.waveBonus + g.wave * 10 + bb.waveBonus;
-    g.money += bonus;
-    g.weather = rollWeather(); // reset weather between waves
+    const upkeep = getWaveUpkeepCost(g);
+    g.money = Math.max(0, g.money + bonus - upkeep);
+    g.weather = rollWeather(g.mode, g.wave); // reset weather between waves
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
     g.trivogaCooldown = 0; // Reset Тривога cooldown between waves
-    addLog(g, `${getWaveCompleteQuip()} +${bonus}💰`);
+    addLog(g, getWaveCompleteQuip(), {
+      broadcast: { text: getBattleCalloutText('waveComplete', g.mode), life: 56, priority: 1, color: '#dcfce7', accent: '#22c55e' },
+    });
+    addLog(g, getWaveFundingQuip({ amount: bonus, wave: g.wave, net: bonus - upkeep, mode: g.mode }));
+    if (upkeep > 0) addLog(g, getUpkeepQuip({ amount: upkeep, wave: g.wave, net: bonus - upkeep, mode: g.mode }));
     // Intel: show approximate composition of next wave
     if (hasMoreWaves(g.mode, g.wave)) {
       setTimeout(() => {
@@ -110,7 +155,9 @@ export function update(g) {
   for (const en of g.enemies) {
     if (en.stealth && shouldRevealStealthEnemy(g, en)) {
       en.stealth = false;
-      addLog(g, '⚠️ Низьколітна ціль виявлена!');
+      addLog(g, '⚠️ Низьколітна ціль виявлена!', {
+        broadcast: { text: getBattleCalloutText('stealthReveal', g.mode), life: 48, priority: 2, color: '#fde68a', accent: '#f59e0b' },
+      });
       // Visual pop effect
       g.floats.push({ x: en.x, y: en.y - 16, text: '👁️ ВИЯВЛЕНО', color: '#fbbf24', life: 50, ml: 50 });
     }
@@ -151,7 +198,9 @@ export function update(g) {
         const buffPct = g.mode.orlan?.waveBuff || 0.25;
         g.nextWaveBuff += buffPct;
         g.orlanEscapes++;
-        addLog(g, `⚠️ Орлан пройшов! Наступна хвиля +${Math.round(buffPct * 100)}%`);
+        addLog(g, `⚠️ Орлан пройшов! Наступна хвиля +${Math.round(buffPct * 100)}%`, {
+          broadcast: { text: getBattleCalloutText('orlanEscape', g.mode), life: 56, priority: 2, color: '#fde68a', accent: '#f59e0b' },
+        });
         en.hp = 0;
       }
       continue;
@@ -161,26 +210,27 @@ export function update(g) {
     if (!to) { retarget(g, en); to = getTargetPoint(g, en.target); }
     if (!to) continue;
 
-    // Guided drones actively retarget nearest tower each tick
-    if (en.type === 'guided' && g.tick % 20 === 0) {
-      retarget(g, en);
+    syncGuidedRoute(g, en, to);
+
+    const wasCruising = isEnemyInCruiseIngress(en);
+    const promotedTarget = advanceEnemyNavigation(en);
+    if (promotedTarget) {
       to = getTargetPoint(g, en.target) || to;
+      syncGuidedRoute(g, en, to);
+    }
+    if (wasCruising && !isEnemyInCruiseIngress(en)) {
+      en.altitude = (en.type === 'shahed' || en.type === 'geran') ? 'diving' : null;
+      g.floats.push({ x: en.x, y: en.y - 16, text: '↷ ЗАХІД', color: '#fca5a5', life: 40, ml: 40 });
     }
 
-    const a = ang(en, to);
+    const navPoint = getEnemyNavPoint(en, to);
+    const a = ang(en, navPoint);
 
     // Wind drift
     let driftX = 0, driftY = 0;
     if (g.weather?.effects?.drift) {
       driftX = Math.sin(g.tick * 0.05 + en.id * 3) * 0.3;
       driftY = Math.cos(g.tick * 0.03 + en.id * 7) * 0.15;
-    }
-
-    // Guided drones zigzag
-    if (en.type === 'guided') {
-      const zigzag = Math.sin(g.tick * 0.12 + en.id * 3) * 1.5;
-      driftX += Math.cos(a + Math.PI / 2) * zigzag;
-      driftY += Math.sin(a + Math.PI / 2) * zigzag;
     }
 
     en.x += (Math.cos(a) * en.speed + driftX) * TICK;

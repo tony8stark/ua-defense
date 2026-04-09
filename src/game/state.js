@@ -62,7 +62,8 @@ export function createGameState(city, mode) {
     f16Cooldown: 0,
     ewActive: null,
     ewCooldown: 0,
-    weather: rollWeather(),
+    weather: rollWeather(mode, 0),
+    battleCallout: null,
     // Active ability: "Тривога!"
     trivogaActive: 0,    // ticks remaining for buff
     trivogaCooldown: 0,  // ticks remaining until can use again
@@ -115,6 +116,7 @@ export function getUIState(g) {
     counts,
     logs: g.logs,
     weather: g.weather,
+    battleCallout: g.battleCallout ? { ...g.battleCallout } : null,
     ewActive: !!g.ewActive,
     f16Active: !!g.f16,
     patriotInterceptions: g.patriotInterceptions,
@@ -255,8 +257,40 @@ export function getBuildingBonuses(g) {
   return bonuses;
 }
 
-export function addLog(g, msg) {
+export function showBattleCallout(g, text, opts = {}) {
+  if (!text) return false;
+
+  const life = opts.life ?? 96;
+  const next = {
+    text,
+    life,
+    ml: life,
+    color: opts.color || '#e2e8f0',
+    accent: opts.accent || opts.color || '#38bdf8',
+    priority: opts.priority ?? 1,
+  };
+
+  const current = g.battleCallout;
+  if (current && current.priority > next.priority && current.life > current.ml * 0.35) {
+    return false;
+  }
+
+  g.battleCallout = next;
+  return true;
+}
+
+export function updateBattleCallout(g) {
+  if (!g.battleCallout) return;
+  g.battleCallout.life--;
+  if (g.battleCallout.life <= 0) g.battleCallout = null;
+}
+
+export function addLog(g, msg, opts = {}) {
   g.logs = [{ msg, t: Date.now() }, ...g.logs].slice(0, 20);
+  if (!opts.broadcast) return;
+
+  const broadcast = opts.broadcast === true ? {} : opts.broadcast;
+  showBattleCallout(g, broadcast.text || msg, broadcast);
 }
 
 // Combo system: call on every kill to track streaks
@@ -281,7 +315,9 @@ export function registerKill(g, reward, x, y) {
       bonus = Math.round(reward * (t.mul - 1));
       g.money += bonus;
       g.score += bonus;
-      addLog(g, `🔥 ${t.label} +${bonus}💰`);
+      addLog(g, `🔥 ${t.label} +${bonus}💰`, {
+        broadcast: { text: t.label, life: 58, priority: 2, color: '#fbbf24', accent: '#f97316' },
+      });
       g.floats.push({ x, y: y - 24, text: t.label, color: '#fbbf24', life: 60, ml: 60 });
       break;
     }
@@ -298,7 +334,9 @@ export function activateTrivoga(g) {
   g.trivogaActive = TRIVOGA_DURATION;
   g.trivogaCooldown = TRIVOGA_COOLDOWN;
   g.trivogaUses++;
-  addLog(g, '🚨 ТРИВОГА! Всі системи на максимум!');
+  addLog(g, '🚨 ТРИВОГА! Всі системи на максимум!', {
+    broadcast: { text: 'ТРИВОГА! МАКСИМУМ', life: 64, priority: 2, color: '#fbbf24', accent: '#ef4444' },
+  });
   return true;
 }
 

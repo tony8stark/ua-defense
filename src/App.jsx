@@ -3,6 +3,7 @@ import { GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
 import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, getRepairCost } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
+import { canPlaceTowerAt, getPlacementPreview } from './game/placement.js';
 import {
   createGameState,
   getUIState,
@@ -17,7 +18,7 @@ import {
   activateTrivoga,
   getBuildingBonuses,
 } from './game/state.js';
-import { getIskanderQuip } from './data/battleQuips.js';
+import { getBattleCalloutText, getIskanderQuip } from './data/battleQuips.js';
 import { playSiren } from './audio/SoundManager.js';
 import { getCallsign } from './data/callsigns.js';
 import { playPlace, playSell, playGameOver, playWaveComplete, resumeOnInteraction } from './audio/SoundManager.js';
@@ -109,7 +110,6 @@ export default function App() {
     const city = g.city;
     const m = g.mode;
     const pos = screenToCanvas(e, canvasRef.current, city.width, city.height);
-    const zone = city.placeZone;
 
     // Check if clicking on existing tower or building
     const target = findTargetAt(g, pos);
@@ -126,19 +126,11 @@ export default function App() {
 
     const cost = getCost(def.baseCost, m.costEsc, existing);
     if (g.money < cost) return;
-    if (pos.x < zone.left || pos.x > zone.right) return;
-    if (zone.top && pos.y < zone.top) return;
-    if (zone.bottom && pos.y > zone.bottom) return;
 
-    const gx = Math.floor(pos.x / GRID) * GRID + GRID / 2;
-    const gy = Math.floor(pos.y / GRID) * GRID + GRID / 2;
+    const placement = canPlaceTowerAt(g, sel, pos);
+    if (!placement.ok) return;
 
-    for (const t of g.towers) {
-      if (t.hp > 0 && Math.abs(t.x - gx) < GRID * 0.8 && Math.abs(t.y - gy) < GRID * 0.8) return;
-    }
-    for (const b of g.buildings) {
-      if (Math.sqrt((gx - b.x) ** 2 + (gy - b.y) ** 2) < 35) return;
-    }
+    const { x: gx, y: gy } = placement.snapped;
 
     const tower = { x: gx, y: gy, type: sel, ...def, cost, cooldown: 0, angle: 0, id: uid(), hp: def.maxHp, maxHp: def.maxHp, level: 0, callsign: getCallsign(), kills: 0 };
 
@@ -189,13 +181,9 @@ export default function App() {
     if (phaseRef.current !== 'playing') return;
     const g = gRef.current;
     if (!g) return;
-    const zone = g.city.placeZone;
     const pos = screenToCanvas(e, canvasRef.current, g.city.width, g.city.height);
-    const inZone = pos.x >= zone.left && pos.x <= zone.right
-      && (!zone.top || pos.y >= zone.top) && (!zone.bottom || pos.y <= zone.bottom);
-    hoverRef.current = inZone
-      ? { x: Math.floor(pos.x / GRID) * GRID + GRID / 2, y: Math.floor(pos.y / GRID) * GRID + GRID / 2 }
-      : null;
+    const preview = getPlacementPreview(g, selectedRef.current, pos);
+    hoverRef.current = preview.reason === 'zone' ? null : preview;
   }, []);
 
   // Touch: tap to place/select, long-press for context menu
@@ -357,7 +345,9 @@ export default function App() {
     }
     if (moved > 0) {
       iw.scrambled = true;
-      addLog(g, `🏃 ${getIskanderQuip('scramble')}`);
+      addLog(g, `🏃 ${getIskanderQuip('scramble')}`, {
+        broadcast: { text: getBattleCalloutText('iskanderScramble', g.mode), life: 52, priority: 2, color: '#dcfce7', accent: '#22c55e' },
+      });
       syncUI();
     }
   }, []);
@@ -409,7 +399,8 @@ export default function App() {
       const g = gRef.current;
       if (!g) return;
 
-      for (let step = 0; step < spdRef.current; step++) {
+      const stepCount = g.patriotAnim?.freezeGameplay ? 1 : spdRef.current;
+      for (let step = 0; step < stepCount; step++) {
         const result = gameUpdate(g);
         if (result === 'won') { phaseRef.current = 'won'; setPhase('won'); setUI(getUIState(g)); playWaveComplete(); return; }
         if (result === 'lost') { phaseRef.current = 'lost'; setPhase('lost'); setUI(getUIState(g)); playGameOver(); return; }

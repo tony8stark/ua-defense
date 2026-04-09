@@ -2,9 +2,10 @@
 import { TICK, rnd, uid } from './physics.js';
 import { addLog } from './state.js';
 import { playJetFlyby, playEWBuzz } from '../audio/SoundManager.js';
-import { getF16Quip, getEWQuip } from '../data/battleQuips.js';
+import { getBattleCalloutText, getF16Quip, getEWQuip } from '../data/battleQuips.js';
 import { ENEMY_COLORS, ENEMY_SIZES } from '../data/enemies.js';
 import { getSpawnPos, pickSpawnEdge } from '../data/cities.js';
+import { createEnemyState } from './spawner.js';
 import { getEnemySpawnProfile } from './waves.js';
 
 // ====== F-16 VIPER ======
@@ -26,7 +27,9 @@ export function trySpawnF16(g) {
     trail: [],
   };
   g.f16Cooldown = 3; // can't appear for next 3 waves
-  addLog(g, `🛩️ ${getF16Quip('arrive')}`);
+  addLog(g, `🛩️ ${getF16Quip('arrive')}`, {
+    broadcast: { text: getBattleCalloutText('f16Arrive', g.mode), life: 58, priority: 2, color: '#e0f2fe', accent: '#38bdf8' },
+  });
   playJetFlyby();
 }
 
@@ -52,7 +55,9 @@ export function updateF16(g) {
       });
       f.missiles--;
       f.missileCooldown = 25;
-      addLog(g, `🚀 ${getF16Quip('missile')}`);
+      addLog(g, `🚀 ${getF16Quip('missile')}`, {
+        broadcast: { text: getBattleCalloutText('f16Missile', g.mode), life: 42, priority: 2, color: '#e0f2fe', accent: '#60a5fa' },
+      });
     }
   }
 
@@ -148,7 +153,9 @@ export function trySpawnEW(g) {
   const duration = rnd(minDuration, maxDuration);
   g.ewActive = { timer: duration, maxTimer: duration };
   g.ewCooldown = 2;
-  addLog(g, `📡 ${getEWQuip('start')}`);
+  addLog(g, `📡 ${getEWQuip('start')}`, {
+    broadcast: { text: getBattleCalloutText('ewStart', g.mode), life: 62, priority: 2, color: '#fde68a', accent: '#f59e0b' },
+  });
   playEWBuzz();
 }
 
@@ -157,7 +164,9 @@ export function updateEW(g) {
   g.ewActive.timer -= TICK;
   if (g.ewActive.timer <= 0) {
     g.ewActive = null;
-    addLog(g, `📡 ${getEWQuip('end')}`);
+    addLog(g, `📡 ${getEWQuip('end')}`, {
+      broadcast: { text: getBattleCalloutText('ewEnd', g.mode), life: 44, priority: 1, color: '#dcfce7', accent: '#22c55e' },
+    });
   }
 }
 
@@ -232,32 +241,23 @@ export function trySpawnKh101(g) {
   // Don't overlap with F-16 (both are flyby events)
   if (g.f16) return;
 
-  const W = g.city.width, H = g.city.height;
   const count = rnd(cfg.count[0], cfg.count[1] + 1) | 0;
 
-  addLog(g, '⚠️ Ту-95МС в повітрі! Пуск крилатих ракет!');
+  addLog(g, '⚠️ Ту-95МС в повітрі! Пуск крилатих ракет!', {
+    broadcast: { text: getBattleCalloutText('cruiseLaunch', g.mode), life: 62, priority: 2, color: '#fee2e2', accent: '#ef4444' },
+  });
 
-  // Spawn Kh-101s from one edge with slight delay
-  const spawnY = rnd(H * 0.1, H * 0.4);
   for (let i = 0; i < count; i++) {
     const target = pickKh101Target(g);
     if (!target) continue;
 
-    g.enemies.push({
-      x: W + 30 + i * 25, // staggered from right edge
-      y: spawnY + rnd(-30, 30),
-      hp: cfg.hp, maxHp: cfg.hp,
-      speed: cfg.speed,
-      dmg: cfg.dmg,
-      reward: cfg.reward,
+    const enemy = createEnemyState(g, 'kh101', target, null, {
       color: ENEMY_COLORS.kh101,
       sz: ENEMY_SIZES.kh101,
-      type: 'kh101',
-      target,
-      id: uid(),
-      angle: Math.PI,
-      dodgeChance: 0,
     });
+    if (!enemy) continue;
+
+    g.enemies.push(enemy);
 
     g.totalSpawned++;
     g.spawnedByType.kh101++;
@@ -312,21 +312,44 @@ export function trySpawnOrlan(g) {
   if (g.spawnedByType.orlan === undefined) g.spawnedByType.orlan = 0;
   g.spawnedByType.orlan++;
 
-  addLog(g, '👁️ Орлан-10 в повітрі! Розвідник — збийте його!');
+  addLog(g, '👁️ Орлан-10 в повітрі! Розвідник — збийте його!', {
+    broadcast: { text: getBattleCalloutText('orlanStart', g.mode), life: 50, priority: 2, color: '#dcfce7', accent: '#10b981' },
+  });
 }
 
 // ====== WEATHER ======
 
-const WEATHER_TYPES = [
-  { id: 'clear', label: '☀️ Ясно', effects: {} },
-  { id: 'clear', label: '☀️ Ясно', effects: {} }, // weighted: clear is more common
-  { id: 'fog', label: '🌫️ Туман', effects: { rangeMul: 0.7 } },
-  { id: 'night', label: '🌙 Ніч', effects: { turretAccMul: 0.8, visibility: 0.6 } },
-  { id: 'wind', label: '💨 Вітер', effects: { accuracyMul: 0.85, drift: true } },
-];
+const WEATHER_TYPES = {
+  clear: { id: 'clear', label: '☀️ Ясно', effects: {} },
+  fog: { id: 'fog', label: '🌫️ Туман', effects: { rangeMul: 0.7 } },
+  night: { id: 'night', label: '🌙 Ніч', effects: { turretAccMul: 0.8, visibility: 0.6 } },
+  wind: { id: 'wind', label: '💨 Вітер', effects: { accuracyMul: 0.85, drift: true } },
+  storm: { id: 'storm', label: '⛈️ Шквал', effects: { rangeMul: 0.82, turretAccMul: 0.72, accuracyMul: 0.8, drift: true, visibility: 0.55 } },
+};
 
-export function rollWeather() {
-  return WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+export function getWeatherPool(mode = {}, waveIndex = 0) {
+  const lateWave = waveIndex >= 6;
+  const endlessLate = !!mode.endless && waveIndex >= 8;
+  const harshMode = (mode.iskander?.interval?.[0] || 9999) < 800;
+
+  const pool = [
+    WEATHER_TYPES.clear,
+    WEATHER_TYPES.fog,
+    WEATHER_TYPES.night,
+    WEATHER_TYPES.wind,
+  ];
+
+  if (!lateWave && !mode.endless && !harshMode) pool.unshift(WEATHER_TYPES.clear);
+  if (lateWave || harshMode) pool.push(WEATHER_TYPES.fog, WEATHER_TYPES.wind);
+  if (endlessLate || harshMode) pool.push(WEATHER_TYPES.storm, WEATHER_TYPES.night);
+  if (endlessLate) pool.push(WEATHER_TYPES.storm, WEATHER_TYPES.wind);
+
+  return pool;
+}
+
+export function rollWeather(mode, waveIndex, roll = Math.random()) {
+  const pool = getWeatherPool(mode, waveIndex);
+  return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))];
 }
 
 export function drawWeatherOverlay(ctx, g) {
@@ -357,9 +380,13 @@ export function drawWeatherOverlay(ctx, g) {
       ctx.fillStyle = glow;
       ctx.fillRect(b.x - 50, b.y - 50, 100, 100);
     }
-  } else if (w.id === 'wind') {
+  } else if (w.id === 'wind' || w.id === 'storm') {
+    if (w.id === 'storm') {
+      ctx.fillStyle = 'rgba(15,23,42,0.18)';
+      ctx.fillRect(0, 0, g.city.width, g.city.height);
+    }
     // Wind streaks
-    ctx.strokeStyle = 'rgba(200,210,220,0.04)';
+    ctx.strokeStyle = w.id === 'storm' ? 'rgba(200,210,220,0.08)' : 'rgba(200,210,220,0.04)';
     ctx.lineWidth = 1;
     const offset = (g.tick * 2) % 60;
     for (let y = -20; y < g.city.height + 20; y += 30) {
@@ -367,6 +394,16 @@ export function drawWeatherOverlay(ctx, g) {
       ctx.moveTo(-20 + offset, y + Math.sin(y * 0.1) * 5);
       ctx.lineTo(g.city.width + 20, y + 10 + Math.sin(y * 0.1 + 2) * 5);
       ctx.stroke();
+    }
+    if (w.id === 'storm') {
+      ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+      ctx.lineWidth = 2;
+      for (let x = -40; x < g.city.width + 40; x += 90) {
+        ctx.beginPath();
+        ctx.moveTo(x + offset * 0.6, -20);
+        ctx.lineTo(x + 25 + offset * 0.6, g.city.height + 20);
+        ctx.stroke();
+      }
     }
   }
   ctx.restore();

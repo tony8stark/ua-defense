@@ -1,28 +1,58 @@
 // Iskander ballistic missile subsystem + Patriot interception
 import { TICK, dist, rnd, chance } from './physics.js';
 import { GRID } from '../data/cities.js';
-import { DEF_META } from '../data/units.js';
 import { addLog, markUnitDestroyed } from './state.js';
 import { playSiren, playExplosion } from '../audio/SoundManager.js';
 import { playPatriotLaunch } from '../audio/SoundManager.js';
-import { getIskanderQuip, getPatriotQuip } from '../data/battleQuips.js';
+import { getBattleCalloutText, getIskanderQuip, getPatriotQuip } from '../data/battleQuips.js';
 
-const PATRIOT_RISE_TICKS = 55;
-const PATRIOT_EXPLODE_TICKS = 65;
-const PATRIOT_TOTAL_TICKS = PATRIOT_RISE_TICKS + PATRIOT_EXPLODE_TICKS;
+const PATRIOT_CINEMATIC_FLY_TICKS = 72;
+const PATRIOT_CINEMATIC_BLOOM_TICKS = 22;
+const PATRIOT_CINEMATIC_TOTAL_TICKS = PATRIOT_CINEMATIC_FLY_TICKS + PATRIOT_CINEMATIC_BLOOM_TICKS;
+
+function detonatePatriotIntercept(g, pa) {
+  if (!pa || pa.detonated) return;
+
+  pa.detonated = true;
+  pa.detonationTick = pa.tick;
+  g.patriotInterceptions++;
+  addLog(g, `🛡️ ${getPatriotQuip()}`, {
+    broadcast: { text: getBattleCalloutText('patriotHit', g.mode), life: 54, priority: 3, color: '#e2e8f0', accent: '#60a5fa' },
+  });
+
+  g.explosions.push({ x: pa.targetX, y: pa.targetY, r: 34, life: 26, ml: 26 });
+  playExplosion(true);
+  for (let i = 0; i < 18; i++) {
+    g.particles.push({
+      x: pa.targetX + rnd(-10, 10), y: pa.targetY + rnd(-10, 10),
+      vx: rnd(-3, 3), vy: rnd(-4, 2),
+      life: rnd(18, 40),
+      color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fbbf24' : '#60a5fa',
+    });
+  }
+}
+
+export function updatePatriotAnim(g) {
+  const pa = g.patriotAnim;
+  if (!pa) return false;
+
+  pa.tick++;
+
+  if (!pa.detonated && pa.tick >= pa.flyTicks) {
+    detonatePatriotIntercept(g, pa);
+  }
+
+  if (pa.tick >= pa.totalTicks) {
+    g.patriotAnim = null;
+  }
+
+  return true;
+}
 
 export function updateIskander(g) {
   const m = g.mode;
   const isHell = m.iskander.interval[0] < 600;
   const betweenWaves = !g.waveActive && g.wave > 0;
-
-  // Update active Patriot animation
-  if (g.patriotAnim) {
-    g.patriotAnim.tick++;
-    if (g.patriotAnim.tick >= PATRIOT_TOTAL_TICKS) {
-      g.patriotAnim = null;
-    }
-  }
 
   // Resolve active Iskander warning
   if (g.iskanderWarn) {
@@ -69,7 +99,9 @@ function spawnWarning(g, m) {
   }
 
   g.iskanderWarn = { x: gx, y: gy, life: m.iskander.warnTicks };
-  addLog(g, `🚀 ${getIskanderQuip('incoming')}`);
+  addLog(g, `🚀 ${getIskanderQuip('incoming')}`, {
+    broadcast: { text: getBattleCalloutText('iskanderIncoming', g.mode), life: 68, priority: 3, color: '#fee2e2', accent: '#ef4444' },
+  });
   playSiren();
 }
 
@@ -85,28 +117,29 @@ function intercept(g, m) {
   // Intercept point: slightly above target (Iskander is coming down)
   const interceptY = Math.max(30, iw.y - rnd(40, 80));
 
+  const iskanderStartX = iw.x + rnd(-W * 0.14, W * 0.14);
+  const iskanderStartY = -28;
+
   g.patriotAnim = {
+    type: 'cinematicIntercept',
+    freezeGameplay: true,
     tick: 0,
+    flyTicks: PATRIOT_CINEMATIC_FLY_TICKS,
+    totalTicks: PATRIOT_CINEMATIC_TOTAL_TICKS,
+    bloomTicks: PATRIOT_CINEMATIC_BLOOM_TICKS,
     launchX,
     launchY,
+    iskanderX: iskanderStartX,
+    iskanderY: iskanderStartY,
     targetX: iw.x,
     targetY: interceptY,
-    // Current missile position (interpolated during render)
+    detonated: false,
   };
 
-  g.patriotInterceptions++;
-  addLog(g, `🛡️ ${getPatriotQuip()}`);
+  addLog(g, '🛡️ Patriot виходить на перехоплення!', {
+    broadcast: { text: getBattleCalloutText('patriotLaunch', g.mode), life: PATRIOT_CINEMATIC_TOTAL_TICKS + 14, priority: 3, color: '#e2e8f0', accent: '#60a5fa' },
+  });
   playPatriotLaunch();
-
-  // Spawn particles at intercept point (delayed visually by renderer)
-  for (let i = 0; i < 16; i++) {
-    g.particles.push({
-      x: iw.x + rnd(-10, 10), y: interceptY + rnd(-10, 10),
-      vx: rnd(-3, 3), vy: rnd(-4, 2),
-      life: rnd(20, 50) + PATRIOT_RISE_TICKS, // delayed start
-      color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fbbf24' : '#60a5fa',
-    });
-  }
 
   g.iskanderWarn = null;
   g.iskanderTimer = rnd(m.iskander.interval[0], m.iskander.interval[1]);
@@ -126,14 +159,18 @@ function impact(g, m) {
       if (inBunker) {
         // Bunker absorbs direct hit: tower takes splash damage instead of instant death
         tw.hp = Math.max(1, tw.hp - Math.round(tw.maxHp * m.iskander.splashPct));
-        addLog(g, `🛡️ Бліндаж витримав прямий удар!`);
+        addLog(g, '🛡️ Бліндаж витримав прямий удар!', {
+          broadcast: { text: getBattleCalloutText('bunkerHold', g.mode), life: 52, priority: 2, color: '#e2e8f0', accent: '#fbbf24' },
+        });
       } else {
         tw.hp = 0;
         if (tw.type === 'airfield') {
           g.kukurzniki = g.kukurzniki.filter(k => k.towerId !== tw.id);
         }
         markUnitDestroyed(g, tw.id);
-        addLog(g, `🚀 ${getIskanderQuip('hit')}`);
+        addLog(g, `🚀 ${getIskanderQuip('hit')}`, {
+          broadcast: { text: getBattleCalloutText('iskanderHit', g.mode), life: 60, priority: 3, color: '#fee2e2', accent: '#ef4444' },
+        });
       }
     } else if (d < GRID * 1.6) {
       const splashDmg = Math.round(tw.maxHp * m.iskander.splashPct * (inBunker ? 0.5 : 1));

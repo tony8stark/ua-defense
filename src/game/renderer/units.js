@@ -1,37 +1,24 @@
 // Tower, kukurzniki, FPV drone rendering with SVG sprites
 import { DEF_META } from '../../data/units.js';
 import { TOWER_SPRITES, drawSprite } from '../../data/sprites.js';
-
-const SYNERGY_RANGE = 56;
+import { getTowerPlacementFootprint } from '../placement.js';
 
 export function drawTowers(ctx, g) {
-  // Draw synergy links first (behind towers)
-  const alive = g.towers.filter(t => t.hp > 0 && t.type !== 'decoy');
-  for (let i = 0; i < alive.length; i++) {
-    for (let j = i + 1; j < alive.length; j++) {
-      const a = alive[i], b = alive[j];
-      if (a.type !== b.type) {
-        const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-        if (d < SYNERGY_RANGE) {
-          ctx.strokeStyle = '#4ade8012';
-          ctx.lineWidth = 1;
-          ctx.setLineDash([2, 4]);
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-      }
-    }
-  }
-
   for (const tw of g.towers) {
     const mc = DEF_META[tw.type];
     const isAlive = tw.hp > 0;
     const alpha = isAlive ? 1 : Math.max(0, (tw.deathTimer || 0) / 30);
 
     ctx.globalAlpha = alpha;
+
+    if (isAlive) {
+      const footprint = getTowerPlacementFootprint(tw);
+      ctx.fillStyle = `${mc.color}10`;
+      ctx.strokeStyle = `${mc.color}22`;
+      ctx.lineWidth = 1;
+      ctx.fillRect(footprint.left, footprint.top, footprint.width, footprint.height);
+      ctx.strokeRect(footprint.left, footprint.top, footprint.width, footprint.height);
+    }
 
     const sprite = TOWER_SPRITES[tw.type];
     if (isAlive && sprite && sprite.complete) {

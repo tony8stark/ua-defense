@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { MODES } from '../src/data/difficulty.js';
 import { getEWMultipliers } from '../src/game/events.js';
 import { flatWave } from '../src/game/spawner.js';
+import { getEnemySpawnProfile, getWaveDef } from '../src/game/waves.js';
 import { shouldRevealStealthEnemy } from '../src/game/stealth.js';
 import {
   createGameState,
@@ -50,6 +51,35 @@ function countTypes(sequence) {
     acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
+}
+
+function summarizeWaveThreat(mode, waveIndex, cityId = 'kyiv') {
+  const city = {
+    id: cityId,
+    width: 900,
+    height: 600,
+    buildings: [{ key: 'power', name: 'Power', maxHp: 100 }],
+    civilianBuildings: [],
+  };
+  const wave = getWaveDef(mode, waveIndex, city);
+  let totalHp = 0;
+  let totalDmg = 0;
+  let totalReward = 0;
+
+  for (const group of wave.en) {
+    const profile = getEnemySpawnProfile(mode, waveIndex, group.t, mode[group.t]);
+    totalHp += (profile.hp || 0) * group.n;
+    totalDmg += (profile.dmg || 0) * group.n;
+    totalReward += (profile.reward || 0) * group.n;
+  }
+
+  return {
+    wave,
+    totalHp,
+    totalDmg,
+    totalReward,
+    pressure: totalHp / wave.d + totalDmg / 18,
+  };
 }
 
 const PRESSURE = {
@@ -126,16 +156,23 @@ test('mvg keeps its fast-target niche and gepard stays within specialist bounds'
   }
 });
 
-test('realistic mode keeps defense output meaningfully below training without collapsing into hell', () => {
+test('realistic mode now sits close to hell on efficiency and late-wave pressure', () => {
   const units = ['turret', 'mvg', 'crew', 'airfield', 'hawk', 'gepard', 'irist'];
   const sumScores = (mode) => units.reduce((sum, unit) => sum + getUnitBalanceScore(mode, unit), 0);
 
   const trainingSum = sumScores(MODES.training);
   const realisticSum = sumScores(MODES.realistic);
   const hellSum = sumScores(MODES.hell);
+  const realisticFinal = summarizeWaveThreat(MODES.realistic, MODES.realistic.waves.length - 1);
+  const hellFinal = summarizeWaveThreat(MODES.hell, MODES.hell.waves.length - 1);
 
   assert.ok(realisticSum < trainingSum * 0.7, `realistic defense ceiling too high: ${realisticSum} vs ${trainingSum}`);
-  assert.ok(realisticSum > hellSum, `realistic should stay above hell baseline: ${realisticSum} vs ${hellSum}`);
+  assert.ok(realisticSum <= hellSum * 1.02, `realistic should not keep so much extra defense slack over hell: ${realisticSum} vs ${hellSum}`);
+  assert.ok(realisticSum >= hellSum * 0.94, `realistic should stay near hell rather than collapsing below it: ${realisticSum} vs ${hellSum}`);
+  assert.ok(MODES.realistic.startMoney < 400, `realistic should start tighter than before: ${MODES.realistic.startMoney}`);
+  assert.ok(MODES.realistic.waveBonus <= 43, `realistic wave bonus should be tighter than before: ${MODES.realistic.waveBonus}`);
+  assert.ok(MODES.realistic.costEsc >= 0.15, `realistic should escalate unit costs faster: ${MODES.realistic.costEsc}`);
+  assert.ok(realisticFinal.pressure >= hellFinal.pressure * 0.95, `realistic finale should pressure close to hell: ${realisticFinal.pressure} vs ${hellFinal.pressure}`);
   assert.ok(getUnitBalanceScore(MODES.realistic, 'hawk') <= 1.25, `realistic hawk too dominant: ${getUnitBalanceScore(MODES.realistic, 'hawk')}`);
   assert.ok(getUnitBalanceScore(MODES.realistic, 'gepard') <= 1.85, `realistic gepard too dominant: ${getUnitBalanceScore(MODES.realistic, 'gepard')}`);
 });

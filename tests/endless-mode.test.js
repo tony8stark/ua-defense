@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { MODES } from '../src/data/difficulty.js';
+import { getUnitBalanceScore } from '../src/data/units.js';
 import { BASE_TICK, TICK, updateTick } from '../src/game/physics.js';
 import {
   decodeLeaderboardScore,
@@ -28,6 +29,25 @@ function makeCity(id = 'kyiv') {
 
 function totalEnemies(waveDef) {
   return waveDef.en.reduce((sum, group) => sum + group.n, 0);
+}
+
+function summarizeWaveThreat(mode, waveIndex, cityId = 'kyiv') {
+  const wave = getWaveDef(mode, waveIndex, makeCity(cityId));
+  let totalHp = 0;
+  let totalDmg = 0;
+
+  for (const group of wave.en) {
+    const profile = getEnemySpawnProfile(mode, waveIndex, group.t, mode[group.t]);
+    totalHp += (profile.hp || 0) * group.n;
+    totalDmg += (profile.dmg || 0) * group.n;
+  }
+
+  return {
+    wave,
+    totalHp,
+    totalDmg,
+    pressure: totalHp / wave.d + totalDmg / 18,
+  };
 }
 
 test('kobayashi maru advertises endless progression while classic modes remain finite', () => {
@@ -104,4 +124,18 @@ test('kobayashi maru leaderboard sorting prefers deeper survival over raw score 
   ], 'kobayashiMaru');
 
   assert.deepEqual(entries.map(entry => entry.id), [3, 2, 1]);
+});
+
+test('kobayashi maru trades away economy slack and becomes harsher than hell by wave sixteen', () => {
+  const units = ['turret', 'mvg', 'crew', 'airfield', 'hawk', 'gepard', 'irist'];
+  const realisticSum = units.reduce((sum, unit) => sum + getUnitBalanceScore(MODES.realistic, unit), 0);
+  const kobayashiSum = units.reduce((sum, unit) => sum + getUnitBalanceScore(MODES.kobayashiMaru, unit), 0);
+  const hellFinal = summarizeWaveThreat(MODES.hell, MODES.hell.waves.length - 1);
+  const kobayashiLate = summarizeWaveThreat(MODES.kobayashiMaru, 15);
+
+  assert.ok(MODES.kobayashiMaru.startMoney < MODES.realistic.startMoney, `endless should not start richer than realistic: ${MODES.kobayashiMaru.startMoney} vs ${MODES.realistic.startMoney}`);
+  assert.ok(MODES.kobayashiMaru.waveBonus < MODES.realistic.waveBonus, `endless should not pay more per wave than realistic: ${MODES.kobayashiMaru.waveBonus} vs ${MODES.realistic.waveBonus}`);
+  assert.ok(MODES.kobayashiMaru.costEsc >= MODES.realistic.costEsc, `endless should not keep cheaper scaling than realistic: ${MODES.kobayashiMaru.costEsc} vs ${MODES.realistic.costEsc}`);
+  assert.ok(kobayashiSum < realisticSum, `endless defense package should not outperform realistic: ${kobayashiSum} vs ${realisticSum}`);
+  assert.ok(kobayashiLate.pressure > hellFinal.pressure, `wave 16 endless pressure should exceed hell finale: ${kobayashiLate.pressure} vs ${hellFinal.pressure}`);
 });

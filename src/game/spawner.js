@@ -2,6 +2,7 @@
 import { uid, rnd, chance } from './physics.js';
 import { ENEMY_COLORS, ENEMY_SIZES } from '../data/enemies.js';
 import { getSpawnPos, pickSpawnEdge } from '../data/cities.js';
+import { createDeepIngressPlan, createGuidedWaypoints, shouldUseDeepIngress } from './enemy-ai.js';
 import { getEnemySpawnProfile } from './waves.js';
 
 const ENEMY_PRESSURE = {
@@ -106,32 +107,31 @@ function pickTarget(g, enemyType) {
     : null;
 }
 
-// Spawn a single enemy
-export function spawnEnemy(g, type) {
-  // Kalibr only spawns on Odesa (sea-based cruise missile)
-  if (type === 'kalibr' && g.city.id !== 'odesa') return;
-
+export function createEnemyState(g, type, target, pos = null, overrides = {}) {
   const et = getEnemySpawnProfile(g.mode, g.wave, type, g.mode[type]);
-  if (!et) return; // guard: enemy type not defined for this difficulty
-  const target = pickTarget(g, type);
-  if (!target) return;
+  if (!et) return null;
 
-  const edge = pickSpawnEdge(g.city);
-  const pos = getSpawnPos(g.city, edge);
+  const targetPoint = getTargetPoint(g, target);
+  if (!targetPoint) return null;
+
+  const deepIngress = shouldUseDeepIngress(type, g.wave, g.mode)
+    ? createDeepIngressPlan(g.city, type, targetPoint)
+    : null;
+  const spawnPos = deepIngress?.spawn || pos || getSpawnPos(g.city, pickSpawnEdge(g.city));
 
   // Stealth: some Shaheds and Gerans fly low (invisible until near towers)
   const canStealth = (type === 'shahed' || type === 'geran');
   const stealthChance = type === 'shahed' ? 0.20 : 0.15;
-  const isStealth = canStealth && chance(stealthChance) && g.wave >= 3;
+  const isStealth = !deepIngress && canStealth && chance(stealthChance) && g.wave >= 3;
 
   // Altitude cycling: some Shaheds climb to 4000-4500m (harder to hit, but less accurate attack)
-  const canAltCycle = (type === 'shahed') && g.wave >= 3 && !isStealth;
+  const canAltCycle = (type === 'shahed') && g.wave >= 3 && !isStealth && !deepIngress;
   const altCycleChance = 0.20;
   const hasAltCycle = canAltCycle && chance(altCycleChance);
 
-  g.enemies.push({
-    x: pos.x,
-    y: pos.y,
+  const enemy = {
+    x: spawnPos.x,
+    y: spawnPos.y,
     hp: et.hp,
     maxHp: et.hp,
     speed: et.speed,
@@ -145,18 +145,37 @@ export function spawnEnemy(g, type) {
     angle: Math.PI,
     dodgeChance: et.dodgeChance || 0,
     stealth: isStealth,
+    deepIngress,
+    guidedPath: type === 'guided' ? createGuidedWaypoints(g.city, spawnPos, targetPoint) : null,
+    guidedPathTarget: type === 'guided' ? `${target.mode}:${target.id || target.key || ''}` : null,
     // Altitude cycling state
     altCycle: hasAltCycle,
-    altitude: hasAltCycle ? 'climbing' : null, // null | 'climbing' | 'high' | 'diving' | 'low'
+    altitude: deepIngress ? 'high' : hasAltCycle ? 'climbing' : null, // null | 'climbing' | 'high' | 'diving' | 'low'
     altTimer: hasAltCycle ? rnd(40, 80) : 0,   // ticks until next phase change
-  });
+    ...overrides,
+  };
 
   // Apply Orlan recon wave buff (if any)
   if (g._waveBuff > 1.0) {
-    const en = g.enemies[g.enemies.length - 1];
-    en.hp = Math.round(en.hp * g._waveBuff);
-    en.maxHp = en.hp;
+    enemy.hp = Math.round(enemy.hp * g._waveBuff);
+    enemy.maxHp = enemy.hp;
   }
+
+  return enemy;
+}
+
+// Spawn a single enemy
+export function spawnEnemy(g, type) {
+  // Kalibr only spawns on Odesa (sea-based cruise missile)
+  if (type === 'kalibr' && g.city.id !== 'odesa') return;
+
+  const target = pickTarget(g, type);
+  if (!target) return;
+
+  const enemy = createEnemyState(g, type, target);
+  if (!enemy) return;
+
+  g.enemies.push(enemy);
 
   // Track spawn stats
   g.totalSpawned++;

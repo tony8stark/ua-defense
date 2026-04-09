@@ -80,11 +80,11 @@ function buildKobayashiWave(mode, waveIndex, city) {
   const minDelay = mode.endlessConfig?.minDelay ?? 12;
   const doctrineBias = {
     probe: 0,
-    saturation: -2,
-    raid: -4,
-    hunt: -5,
-    cruise: -4,
-    overmatch: -8,
+    saturation: -4,
+    raid: -6,
+    hunt: -7,
+    cruise: -6,
+    overmatch: -10,
   };
 
   return {
@@ -133,11 +133,11 @@ export function getEnemySpawnProfile(mode, waveIndex, type, baseStats) {
 
   const stage = waveIndex + 1;
   const bias = ENDLESS_TYPE_BIAS[type] || { hp: 1, speed: 1, dmg: 1, reward: 1, dodge: 0.5 };
-  const hpMul = 1 + Math.min(1.8, stage * 0.045 * bias.hp);
-  const speedMul = 1 + Math.min(0.55, stage * 0.012 * bias.speed);
-  const dmgMul = 1 + Math.min(1.0, stage * 0.028 * bias.dmg);
-  const rewardMul = 1 + Math.min(0.7, stage * 0.016 * bias.reward);
-  const dodgeBonus = Math.min(0.18, stage * 0.0035 * bias.dodge);
+  const hpMul = 1 + Math.min(2.1, stage * 0.052 * bias.hp);
+  const speedMul = 1 + Math.min(0.65, stage * 0.0135 * bias.speed);
+  const dmgMul = 1 + Math.min(1.1, stage * 0.031 * bias.dmg);
+  const rewardMul = 1 + Math.min(0.45, stage * 0.011 * bias.reward);
+  const dodgeBonus = Math.min(0.22, stage * 0.004 * bias.dodge);
 
   const next = { ...baseStats };
 

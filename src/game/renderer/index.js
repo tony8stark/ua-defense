@@ -4,7 +4,7 @@ import { drawBuildings, drawCivilianBuildings } from './buildings.js';
 import { drawTowers, drawKukurzniki, drawFriendlyDrones, drawProjectiles } from './units.js';
 import { drawEnemies } from './enemies.js';
 import { drawEffects } from './effects.js';
-import { drawIskanderWarning, drawHoverPreview, drawPatriotAnim } from './hud-canvas.js';
+import { drawBattleCallout, drawIskanderWarning, drawHoverPreview, drawPatriotAnim } from './hud-canvas.js';
 import { drawF16, drawEWOverlay, drawWeatherOverlay } from '../events.js';
 
 export function draw(ctx, g, hover, selectedType) {
@@ -12,9 +12,17 @@ export function draw(ctx, g, hover, selectedType) {
   ctx.clearRect(0, 0, W, H);
 
   drawTerrain(ctx, g);
-  drawWeatherOverlay(ctx, g);
+  if (!g.patriotAnim?.freezeGameplay) {
+    drawWeatherOverlay(ctx, g);
+  }
   drawCivilianBuildings(ctx, g);
   drawBuildings(ctx, g);
+
+  if (g.patriotAnim?.freezeGameplay) {
+    drawPatriotAnim(ctx, g);
+    drawBattleCallout(ctx, g);
+    return;
+  }
   drawHoverPreview(ctx, hover, selectedType, g.mode);
   drawTowers(ctx, g);
   drawKukurzniki(ctx, g);
@@ -36,4 +44,6 @@ export function draw(ctx, g, hover, selectedType) {
     ctx.strokeRect(1, 1, W - 2, H - 2);
     ctx.restore();
   }
+
+  drawBattleCallout(ctx, g);
 }
