@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { setMuted } from '../src/audio/SoundManager.js';
 import { GRID } from '../src/data/cities.js';
 import { MODES } from '../src/data/difficulty.js';
 import {
@@ -10,8 +11,10 @@ import {
   getWeatherEnemySpeedMultiplier,
   getWeatherVisualProfile,
 } from '../src/game/events.js';
+import { update } from '../src/game/engine.js';
 import { createGameState } from '../src/game/state.js';
 import { getStealthRevealConfig, shouldRevealStealthEnemy } from '../src/game/stealth.js';
+import { CITIES } from '../src/data/cities.js';
 
 test('fog shrinks stealth reveal ranges so low-flying targets stay hidden longer', () => {
   assert.equal(typeof getWeatherEnemySpeedMultiplier, 'function');
@@ -95,4 +98,23 @@ test('weather visual profiles stay atmospheric instead of flat overlays', () => 
   assert.ok(rain.groundMistAlpha > 0.03, `rain should leave some cold mist near the ground, got ${rain.groundMistAlpha}`);
   assert.ok(storm.lightningAlpha > 0, `storm should be able to flash, got ${storm.lightningAlpha}`);
   assert.ok(storm.cloudVeilAlpha > rain.cloudVeilAlpha, `storm should feel heavier than rain: ${storm.cloudVeilAlpha} vs ${rain.cloudVeilAlpha}`);
+});
+
+test('interwave recovery clears active weather instead of keeping rain over the map', () => {
+  setMuted(true);
+  const g = createGameState(CITIES.kyiv, MODES.realistic);
+  g.waveActive = true;
+  g.spawnQueue = [];
+  g.enemies = [];
+  g.explosions = [];
+  g.weather = {
+    id: 'rain',
+    label: '🌧️ Дощ',
+    effects: { accuracyMul: 0.94, turretAccMul: 0.92 },
+  };
+
+  update(g);
+
+  assert.equal(g.waveActive, false);
+  assert.equal(g.weather?.id, 'clear');
 });

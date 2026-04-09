@@ -11,6 +11,7 @@ import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander, updatePatriotAnim } from './iskander.js';
 import {
+  createClearWeather,
   getWeatherEnemyMissChance,
   getWeatherEnemySpeedMultiplier,
   trySpawnF16,
@@ -130,7 +131,7 @@ export function update(g) {
     const upkeep = getWaveUpkeepCost(g);
     const relief = getWaveRecoveryRelief(g);
     g.money = Math.max(0, g.money + bonus - upkeep + relief);
-    g.weather = rollWeather(g.mode, g.wave); // reset weather between waves
+    g.weather = createClearWeather();
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
     g.trivogaCooldown = 0; // Reset Тривога cooldown between waves

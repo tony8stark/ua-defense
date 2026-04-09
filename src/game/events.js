@@ -319,8 +319,17 @@ export function trySpawnOrlan(g) {
 
 // ====== WEATHER ======
 
+export const CLEAR_WEATHER = { id: 'clear', label: '☀️ Ясно', effects: {} };
+
+export function createClearWeather() {
+  return {
+    ...CLEAR_WEATHER,
+    effects: { ...CLEAR_WEATHER.effects },
+  };
+}
+
 const WEATHER_TYPES = {
-  clear: { id: 'clear', label: '☀️ Ясно', effects: {} },
+  clear: CLEAR_WEATHER,
   fog: { id: 'fog', label: '🌫️ Туман', effects: { rangeMul: 0.72, stealthRevealMul: 0.58, visibility: 0.58 } },
   rain: { id: 'rain', label: '🌧️ Дощ', effects: { rangeMul: 0.94, accuracyMul: 0.94, turretAccMul: 0.92, fpvAccMul: 0.8, airfieldAccMul: 0.78, droneSpeedMul: 0.94, droneMissChance: 0.06 } },
   night: { id: 'night', label: '🌙 Ніч', effects: { turretAccMul: 0.8, visibility: 0.6 } },
@@ -519,7 +528,7 @@ function drawRainSheets(ctx, g, profile, color) {
 
 export function drawWeatherOverlay(ctx, g) {
   const w = g.weather;
-  if (!w || w.id === 'clear') return;
+  if (!g.waveActive || !w || w.id === 'clear') return;
 
   const profile = getWeatherVisualProfile(w);
   ctx.save();

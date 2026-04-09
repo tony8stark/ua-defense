@@ -1,7 +1,7 @@
 // Game state factory: creates a fresh game state for a given city + difficulty
 import { uid, resetIds, rnd } from './physics.js';
 import { resetCallsigns } from '../data/callsigns.js';
-import { rollWeather } from './events.js';
+import { createClearWeather } from './events.js';
 import { DEF_META } from '../data/units.js';
 
 function createByTypeMap() {
@@ -62,7 +62,7 @@ export function createGameState(city, mode) {
     f16Cooldown: 0,
     ewActive: null,
     ewCooldown: 0,
-    weather: rollWeather(mode, 0),
+    weather: createClearWeather(),
     battleCallout: null,
     // Active ability: "Тривога!"
     trivogaActive: 0,    // ticks remaining for buff

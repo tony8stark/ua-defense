@@ -20,7 +20,7 @@ export default function GameHUD({ money, killed, wave, waveActive, totalWaves, b
       <span className="font-mono">💰<span style={{ color: '#fbbf24' }}>{money}</span></span>
       <span className="font-mono">💀<span style={{ color: '#cbd5e1' }}>{killed}</span></span>
       <span className="font-mono">🌊<span style={{ color: '#a78bfa' }}>{wave + (waveActive ? 1 : 0)}/{totalWaves}</span></span>
-      {weather && weather.id !== 'clear' && (
+      {waveActive && weather && weather.id !== 'clear' && (
         <span style={{ fontSize: 11 }}>{weather.label}</span>
       )}
       {ewActive && (
