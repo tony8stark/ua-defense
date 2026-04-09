@@ -6,7 +6,7 @@ import {
   getEnemyNavPoint,
   isEnemyInCruiseIngress,
 } from './enemy-ai.js';
-import { getWaveUpkeepCost } from './economy.js';
+import { getWaveRecoveryRelief, getWaveUpkeepCost } from './economy.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander, updatePatriotAnim } from './iskander.js';
@@ -63,6 +63,7 @@ export function startWave(g) {
   g.spawnTimer = 0;
   g.waveActive = true;
   g.waveDelay = waveDef.d;
+  g.waveLosses = 0;
 
   // Apply Orlan recon buff (if any)
   if (g.nextWaveBuff > 1.0) {
@@ -127,7 +128,8 @@ export function update(g) {
     const bb = getBuildingBonuses(g);
     const bonus = g.mode.waveBonus + g.wave * 10 + bb.waveBonus;
     const upkeep = getWaveUpkeepCost(g);
-    g.money = Math.max(0, g.money + bonus - upkeep);
+    const relief = getWaveRecoveryRelief(g);
+    g.money = Math.max(0, g.money + bonus - upkeep + relief);
     g.weather = rollWeather(g.mode, g.wave); // reset weather between waves
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
@@ -136,6 +138,7 @@ export function update(g) {
       broadcast: { text: getBattleCalloutText('waveComplete', g.mode), life: 56, priority: 1, color: '#dcfce7', accent: '#22c55e' },
     });
     addLog(g, getWaveFundingQuip({ amount: bonus, wave: g.wave, net: bonus - upkeep, mode: g.mode }));
+    if (relief > 0) addLog(g, `🛠️ Резерв на відновлення позицій: +${relief}💰`);
     if (upkeep > 0) addLog(g, getUpkeepQuip({ amount: upkeep, wave: g.wave, net: bonus - upkeep, mode: g.mode }));
     // Intel: show approximate composition of next wave
     if (hasMoreWaves(g.mode, g.wave)) {

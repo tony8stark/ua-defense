@@ -67,3 +67,52 @@ test('realistic baseline survives wave four often enough to keep the mode learna
   assert.ok(kyiv.survivalByWave[4] >= 0.5, `kyiv realistic wave 4 survival is still too brittle: ${kyiv.survivalByWave[4]}`);
   assert.ok(odesa.survivalByWave[4] >= 0.5, `odesa realistic wave 4 survival is still too brittle: ${odesa.survivalByWave[4]}`);
 });
+
+test('realistic wave five is no longer a hard wall immediately after the early-game fix', () => {
+  const kyiv = runBatchSimulation({
+    city: CITIES.kyiv,
+    mode: MODES.realistic,
+    seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    maxWaves: 5,
+    clearWeather: true,
+    buildOrder: getDefaultBuildOrder('kyiv'),
+  });
+  const odesa = runBatchSimulation({
+    city: CITIES.odesa,
+    mode: MODES.realistic,
+    seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    maxWaves: 5,
+    clearWeather: true,
+    buildOrder: getDefaultBuildOrder('odesa'),
+  });
+
+  assert.ok(kyiv.survivalByWave[5] >= 0.16, `kyiv realistic wave 5 still behaves like a hard wall: ${kyiv.survivalByWave[5]}`);
+  assert.ok(odesa.survivalByWave[5] >= 0.16, `odesa realistic wave 5 still behaves like a hard wall: ${odesa.survivalByWave[5]}`);
+});
+
+test('realistic does not hit the true survival cliff until waves seven and eight', () => {
+  const seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const kyiv = runBatchSimulation({
+    city: CITIES.kyiv,
+    mode: MODES.realistic,
+    seeds,
+    maxWaves: 8,
+    clearWeather: true,
+    buildOrder: getDefaultBuildOrder('kyiv'),
+  });
+  const odesa = runBatchSimulation({
+    city: CITIES.odesa,
+    mode: MODES.realistic,
+    seeds,
+    maxWaves: 8,
+    clearWeather: true,
+    buildOrder: getDefaultBuildOrder('odesa'),
+  });
+
+  assert.ok(kyiv.survivalByWave[5] >= 0.33, `kyiv realistic should stay comfortably above the cliff through wave 5: ${kyiv.survivalByWave[5]}`);
+  assert.ok(odesa.survivalByWave[5] >= 0.33, `odesa realistic should stay comfortably above the cliff through wave 5: ${odesa.survivalByWave[5]}`);
+  assert.ok(kyiv.survivalByWave[7] >= 0.22, `kyiv realistic should keep the low-survival zone closer to wave 7: ${kyiv.survivalByWave[7]}`);
+  assert.ok(odesa.survivalByWave[7] >= 0.22, `odesa realistic should keep the low-survival zone closer to wave 7: ${odesa.survivalByWave[7]}`);
+  assert.ok(kyiv.survivalByWave[8] > 0, `kyiv realistic should still leave a few runs alive into wave 8: ${kyiv.survivalByWave[8]}`);
+  assert.ok(odesa.survivalByWave[8] > 0, `odesa realistic should still leave a few runs alive into wave 8: ${odesa.survivalByWave[8]}`);
+});

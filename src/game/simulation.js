@@ -26,7 +26,7 @@ const DEFAULT_BUILD_ORDER = {
     { type: 'turret', x: 770, y: 150 },
     { type: 'turret', x: 770, y: 510 },
     { type: 'crew', x: 460, y: 470 },
-    { type: 'hawk', x: 420, y: 300 },
+    { type: 'hawk', x: 380, y: 240 },
     { type: 'airfield', x: 250, y: 300 },
   ],
   odesa: [
@@ -34,7 +34,7 @@ const DEFAULT_BUILD_ORDER = {
     { type: 'turret', x: 520, y: 360 },
     { type: 'crew', x: 380, y: 260 },
     { type: 'mvg', x: 440, y: 310 },
-    { type: 'decoy', x: 600, y: 270 },
+    { type: 'decoy', x: 560, y: 270 },
     { type: 'turret', x: 420, y: 120 },
     { type: 'turret', x: 420, y: 470 },
     { type: 'crew', x: 320, y: 380 },
@@ -229,12 +229,52 @@ function getUpgradeCandidates(g) {
     });
 }
 
-function spendInterwaveBudget(g, buildOrder, buildCursorRef) {
-  const reserveMoney = Math.max(35, Math.round(g.mode.waveBonus * 0.65));
+function getTargetBuildCount(g, buildOrder) {
+  const openerFloor = 5;
+  return Math.min(buildOrder.length, openerFloor + g.wave * 2);
+}
+
+function getReserveMoney(g, buildOrder) {
+  const baseReserve = g.wave === 0
+    ? 0
+    : Math.max(18, Math.round(g.mode.waveBonus * 0.35));
+  const liveCount = g.towers.filter(tower => tower.hp > 0).length;
+  const targetCount = getTargetBuildCount(g, buildOrder);
+
+  if (liveCount < targetCount) {
+    return g.wave <= 2 ? 0 : Math.min(baseReserve, 12);
+  }
+
+  return baseReserve;
+}
+
+function tryBuildFromPlan(g, buildOrder, reserveMoney) {
+  for (const placement of buildOrder) {
+    const def = g.mode[placement.type];
+    if (!def) continue;
+
+    const existing = g.towers.filter(tower => tower.type === placement.type && tower.hp > 0).length;
+    if (existing >= def.maxCount) continue;
+
+    const cost = getCost(def.baseCost, g.mode.costEsc, existing);
+    if (g.money - cost < reserveMoney) continue;
+    if (tryPlaceTower(g, placement)) return true;
+  }
+
+  return false;
+}
+
+function spendInterwaveBudget(g, buildOrder) {
+  const reserveMoney = getReserveMoney(g, buildOrder);
   let spent = true;
 
   while (spent) {
     spent = false;
+
+    if (tryBuildFromPlan(g, buildOrder, reserveMoney)) {
+      spent = true;
+      continue;
+    }
 
     for (const target of getRepairTargets(g)) {
       const hpRatio = target.hp / target.maxHp;
@@ -246,9 +286,7 @@ function spendInterwaveBudget(g, buildOrder, buildCursorRef) {
     }
     if (spent) continue;
 
-    const nextPlacement = buildOrder[buildCursorRef.index];
-    if (nextPlacement && tryPlaceTower(g, nextPlacement)) {
-      buildCursorRef.index++;
+    if (tryBuildFromPlan(g, buildOrder, reserveMoney)) {
       spent = true;
       continue;
     }
@@ -283,11 +321,10 @@ export function runSimulation({
 } = {}) {
   return withSimulationRuntime(seed, () => {
     const g = createGameState(city, mode);
-    const buildCursorRef = { index: 0 };
     let ended = 'max_waves';
     let timeoutWave = null;
 
-    spendInterwaveBudget(g, buildOrder, buildCursorRef);
+    spendInterwaveBudget(g, buildOrder);
     const initialBuildCount = g.towers.length;
 
     while (g.wave < maxWaves && hasMoreWaves(g.mode, g.wave)) {
@@ -318,7 +355,7 @@ export function runSimulation({
         break;
       }
 
-      spendInterwaveBudget(g, buildOrder, buildCursorRef);
+      spendInterwaveBudget(g, buildOrder);
     }
 
     if (ended === 'max_waves' && g.wave < maxWaves && !hasMoreWaves(g.mode, g.wave)) {

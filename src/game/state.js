@@ -92,6 +92,7 @@ export function createGameState(city, mode) {
       refundByType: createByTypeMap(),
       repairByBuilding: {},
     },
+    waveLosses: 0,
   };
 }
 
@@ -151,7 +152,12 @@ export function recordUnitKill(g, towerId) {
 // Mark a unit as destroyed in roster
 export function markUnitDestroyed(g, towerId) {
   const entry = g.unitRoster.find(u => u.id === towerId);
-  if (entry) entry.alive = false;
+  if (entry && entry.alive) {
+    entry.alive = false;
+    g.waveLosses = (g.waveLosses || 0) + 1;
+    return true;
+  }
+  return false;
 }
 
 // Mark a unit as sold in roster

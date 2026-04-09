@@ -85,3 +85,14 @@ test('shahed render angle compensates for png forward direction', () => {
   assert.equal(getEnemyRenderAngle('geran', 0), 0);
   assert.equal(getEnemyRenderAngle('lancet', Math.PI), Math.PI);
 });
+
+test('leaderboard uses normalized stat cards and patch labels instead of inline icon-number strings', () => {
+  const uiSource = readFileSync(resolve('src/ui/Leaderboard.jsx'), 'utf8');
+  const helperSource = readFileSync(resolve('src/lib/leaderboard.js'), 'utf8');
+
+  assert.match(helperSource, /% збиття/, 'leaderboard helper should expose interception percentage');
+  assert.match(uiSource, /Патчі/, 'leaderboard should render patch labels for runs');
+  assert.match(uiSource, /getLeaderboardEntryStats/, 'leaderboard should consume normalized stat helpers');
+  assert.doesNotMatch(uiSource, /`🌊\$\{/, 'leaderboard should not concatenate wave glyphs directly into score strings anymore');
+  assert.doesNotMatch(uiSource, /`🏅\$\{/, 'leaderboard should not concatenate score glyphs directly into stat strings anymore');
+});

@@ -7,6 +7,8 @@ import { BASE_TICK, TICK, updateTick } from '../src/game/physics.js';
 import {
   decodeLeaderboardScore,
   encodeLeaderboardScore,
+  getLeaderboardEntryStats,
+  getLeaderboardPatches,
   sortLeaderboardEntries,
 } from '../src/lib/leaderboard.js';
 import {
@@ -134,6 +136,57 @@ test('mixed leaderboard sorting does not let encoded kobayashi scores float abov
   ], null);
 
   assert.deepEqual(entries.map(entry => entry.id), [2, 3, 1]);
+});
+
+test('leaderboard entry stats normalize classic and endless runs into the same visible structure', () => {
+  const campaign = getLeaderboardEntryStats({
+    difficulty: 'realistic',
+    score: 9120,
+    waves_survived: 8,
+    kills: 34,
+    total_spawned: 41,
+  });
+  const endless = getLeaderboardEntryStats({
+    difficulty: 'kobayashiMaru',
+    score: encodeLeaderboardScore({ difficulty: 'kobayashiMaru', score: 2480, wavesSurvived: 11 }),
+    waves_survived: 11,
+    kills: 52,
+    total_spawned: 60,
+  });
+
+  assert.equal(campaign.score, 9120);
+  assert.equal(endless.score, 2480);
+  assert.equal(campaign.stats.length, 4);
+  assert.equal(endless.stats.length, 4);
+  assert.equal(campaign.stats[1].label, 'Хвилі');
+  assert.equal(endless.stats[3].label, '% збиття');
+  assert.equal(endless.killRate, 87);
+});
+
+test('leaderboard patches derive readable morale tags from the stored run stats', () => {
+  const endlessPatches = getLeaderboardPatches({
+    difficulty: 'kobayashiMaru',
+    city: 'odesa',
+    score: encodeLeaderboardScore({ difficulty: 'kobayashiMaru', score: 3200, wavesSurvived: 14 }),
+    waves_survived: 14,
+    kills: 58,
+    total_spawned: 64,
+  });
+  const campaignPatches = getLeaderboardPatches({
+    difficulty: 'realistic',
+    city: 'kyiv',
+    score: 8900,
+    waves_survived: 8,
+    kills: 28,
+    total_spawned: 32,
+  });
+
+  assert.ok(endlessPatches.some(patch => patch.label.includes('Maru')));
+  assert.ok(endlessPatches.some(patch => patch.label.includes('Чисте небо')));
+  assert.ok(endlessPatches.some(patch => patch.label.includes('Морський')));
+  assert.ok(campaignPatches.some(patch => patch.label.includes('Без ілюзій')));
+  assert.ok(campaignPatches.some(patch => patch.label.includes('Столичний')));
+  assert.ok(campaignPatches.length <= 3);
 });
 
 test('kobayashi maru trades away economy slack and becomes harsher than hell by wave sixteen', () => {

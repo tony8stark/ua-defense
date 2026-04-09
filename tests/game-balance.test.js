@@ -170,7 +170,7 @@ test('realistic mode now sits close to hell on efficiency and late-wave pressure
   assert.ok(realisticSum <= hellSum * 1.02, `realistic should not keep so much extra defense slack over hell: ${realisticSum} vs ${hellSum}`);
   assert.ok(realisticSum >= hellSum * 0.94, `realistic should stay near hell rather than collapsing below it: ${realisticSum} vs ${hellSum}`);
   assert.ok(MODES.realistic.startMoney < 400, `realistic should start tighter than before: ${MODES.realistic.startMoney}`);
-  assert.ok(MODES.realistic.waveBonus <= 43, `realistic wave bonus should be tighter than before: ${MODES.realistic.waveBonus}`);
+  assert.ok(MODES.realistic.waveBonus <= 55, `realistic wave bonus should stay restrained even after recovery tuning: ${MODES.realistic.waveBonus}`);
   assert.ok(MODES.realistic.costEsc >= 0.15, `realistic should escalate unit costs faster: ${MODES.realistic.costEsc}`);
   assert.ok(realisticFinal.pressure >= hellFinal.pressure * 0.95, `realistic finale should pressure close to hell: ${realisticFinal.pressure} vs ${hellFinal.pressure}`);
   assert.ok(getUnitBalanceScore(MODES.realistic, 'hawk') <= 1.25, `realistic hawk too dominant: ${getUnitBalanceScore(MODES.realistic, 'hawk')}`);
@@ -190,17 +190,21 @@ test('realistic opener gives breathing room before full pressure arrives', () =>
   assert.ok(waveThree.totalDmg <= 650, `wave 3 should still teach the mode instead of ending the run outright: ${waveThree.totalDmg}`);
 });
 
-test('realistic early enemy softening burns off by wave five instead of nerfing the whole mode', () => {
+test('realistic early enemy softening now stretches into the midgame before fully burning off', () => {
   const openingShahed = getEnemySpawnProfile(MODES.realistic, 0, 'shahed', MODES.realistic.shahed);
-  const midIntroShahed = getEnemySpawnProfile(MODES.realistic, 2, 'shahed', MODES.realistic.shahed);
-  const fullShahed = getEnemySpawnProfile(MODES.realistic, 4, 'shahed', MODES.realistic.shahed);
-  const introLancet = getEnemySpawnProfile(MODES.realistic, 2, 'lancet', MODES.realistic.lancet);
-  const fullLancet = getEnemySpawnProfile(MODES.realistic, 4, 'lancet', MODES.realistic.lancet);
+  const midIntroShahed = getEnemySpawnProfile(MODES.realistic, 3, 'shahed', MODES.realistic.shahed);
+  const lateIntroShahed = getEnemySpawnProfile(MODES.realistic, 6, 'shahed', MODES.realistic.shahed);
+  const fullShahed = getEnemySpawnProfile(MODES.realistic, 9, 'shahed', MODES.realistic.shahed);
+  const introLancet = getEnemySpawnProfile(MODES.realistic, 3, 'lancet', MODES.realistic.lancet);
+  const lateIntroLancet = getEnemySpawnProfile(MODES.realistic, 6, 'lancet', MODES.realistic.lancet);
+  const fullLancet = getEnemySpawnProfile(MODES.realistic, 9, 'lancet', MODES.realistic.lancet);
 
   assert.ok(openingShahed.dmg < MODES.realistic.shahed.dmg, `opening shaheds should hit softer than base realistic: ${openingShahed.dmg}`);
-  assert.ok(midIntroShahed.dmg < MODES.realistic.shahed.dmg, `wave 3 shaheds should still be slightly softened: ${midIntroShahed.dmg}`);
+  assert.ok(midIntroShahed.dmg < MODES.realistic.shahed.dmg, `wave 4 shaheds should still be slightly softened: ${midIntroShahed.dmg}`);
+  assert.ok(lateIntroShahed.dmg < MODES.realistic.shahed.dmg, `wave 7 shaheds should still keep a little onboarding slack: ${lateIntroShahed.dmg}`);
   assert.equal(fullShahed.dmg, MODES.realistic.shahed.dmg);
-  assert.ok(introLancet.dmg < MODES.realistic.lancet.dmg, `first lancets should not arrive at full brutality: ${introLancet.dmg}`);
+  assert.ok(introLancet.dmg < MODES.realistic.lancet.dmg, `early lancets should not arrive at full brutality: ${introLancet.dmg}`);
+  assert.ok(lateIntroLancet.dmg < MODES.realistic.lancet.dmg, `wave 7 lancets should still keep a little onboarding slack: ${lateIntroLancet.dmg}`);
   assert.equal(fullLancet.dmg, MODES.realistic.lancet.dmg);
 });
 

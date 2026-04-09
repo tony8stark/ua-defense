@@ -12,3 +12,12 @@ export function getWaveUpkeepCost(g) {
     return sum + baseCost * BASE_WAVE_UPKEEP_PCT * upkeepMul * levelMul;
   }, 0));
 }
+
+export function getWaveRecoveryRelief(g) {
+  const relief = g.mode?.lossRelief;
+  if (!relief) return 0;
+  if ((g.waveLosses || 0) <= 0) return 0;
+  if (g.wave > (relief.untilWave ?? 4)) return 0;
+
+  return Math.min(relief.cap ?? Infinity, g.waveLosses * (relief.perUnit ?? 0));
+}

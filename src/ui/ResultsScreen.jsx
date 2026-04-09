@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { MODES } from '../data/difficulty.js';
 import { DEF_META } from '../data/units.js';
 import { submitScore } from '../lib/supabase.js';
-import { encodeLeaderboardScore } from '../lib/leaderboard.js';
+import { encodeLeaderboardScore, getLeaderboardPatches } from '../lib/leaderboard.js';
 import { getWaveDisplayTotal, isEndlessMode } from '../game/waves.js';
 
 const ENEMY_META = {
@@ -31,6 +31,15 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const encodedScore = encodeLeaderboardScore({ difficulty, score, wavesSurvived: wave });
+  const earnedPatches = getLeaderboardPatches({
+    difficulty,
+    city: cityId,
+    score: encodedScore,
+    waves_survived: wave,
+    kills: killed,
+    total_spawned: totalSpawned || 0,
+  });
 
   const handleSubmit = async () => {
     if (!name.trim() || name.length < 2 || name.length > 16) return;
@@ -42,7 +51,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
     }
     const ok = await submitScore({
       name: name.trim(),
-      score: encodeLeaderboardScore({ difficulty, score, wavesSurvived: wave }),
+      score: encodedScore,
       city: cityId,
       difficulty,
       wavesSurvived: wave,
@@ -110,6 +119,36 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
           </div>
         ))}
       </div>
+
+      {earnedPatches.length > 0 && (
+        <div style={{
+          width: '100%', maxWidth: 480, marginBottom: 16,
+          background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            Патчі за виліт
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {earnedPatches.map(patch => (
+              <div
+                key={patch.id}
+                className="font-mono"
+                style={{
+                  borderRadius: 999,
+                  border: `1px solid ${patch.tone}40`,
+                  background: `${patch.tone}14`,
+                  color: patch.tone,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '6px 10px',
+                }}
+              >
+                {patch.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {economy && (
         <div style={{

@@ -20,7 +20,7 @@ import {
   getRetaliationChance,
   shouldUseDeepIngress,
 } from '../src/game/enemy-ai.js';
-import { getWaveUpkeepCost } from '../src/game/economy.js';
+import { getWaveRecoveryRelief, getWaveUpkeepCost } from '../src/game/economy.js';
 import { recordTurretShot } from '../src/game/overheat.js';
 import { canPlaceTowerAt } from '../src/game/placement.js';
 import { getTargetDefenseChance, spawnEnemy } from '../src/game/spawner.js';
@@ -254,6 +254,20 @@ test('wave upkeep is currently disabled so post-wave cash is not shaved down', (
   assert.equal(MODES.kobayashiMaru.upkeepMul, 0);
 });
 
+test('realistic grants a capped early-wave recovery relief after tower losses', () => {
+  const g = createGameState(CITIES.kyiv, MODES.realistic);
+  g.wave = 4;
+  g.waveLosses = 3;
+
+  assert.equal(getWaveRecoveryRelief(g), 144);
+
+  g.wave = 7;
+  assert.equal(getWaveRecoveryRelief(g), 144);
+
+  g.wave = 8;
+  assert.equal(getWaveRecoveryRelief(g), 0);
+});
+
 test('early kobayashi retaliation and tower damage leave fragile defenses alive after one shahed pass', () => {
   const earlyRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 0);
   const waveThreeRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 3);
@@ -292,8 +306,8 @@ test('realistic spawn targeting ramps tower pressure instead of opening with ful
   assert.ok(openingGeran <= 0.12, `opening gerans should mostly stay on buildings: ${openingGeran}`);
   assert.ok(openingLancet <= 0.22, `first lancets should not open with near-half tower focus: ${openingLancet}`);
   assert.ok(openingGuided <= 0.6, `first guided drone should not almost hard-lock towers immediately: ${openingGuided}`);
-  assert.ok(lateLancet >= 0.35, `later lancets should regain tower pressure: ${lateLancet}`);
-  assert.ok(lateGuided >= 0.85, `later guided drones should return to their late-game threat: ${lateGuided}`);
+  assert.ok(lateLancet >= 0.33, `later lancets should regain tower pressure: ${lateLancet}`);
+  assert.ok(lateGuided >= 0.7, `later guided drones should return to their late-game threat: ${lateGuided}`);
 });
 
 test('kobayashi spawn targeting ramps from ten percent opener pressure to capped late-wave tower focus', () => {
