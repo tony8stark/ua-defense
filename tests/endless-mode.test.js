@@ -126,6 +126,16 @@ test('kobayashi maru leaderboard sorting prefers deeper survival over raw score 
   assert.deepEqual(entries.map(entry => entry.id), [3, 2, 1]);
 });
 
+test('mixed leaderboard sorting does not let encoded kobayashi scores float above every other mode', () => {
+  const entries = sortLeaderboardEntries([
+    { id: 1, difficulty: 'kobayashiMaru', waves_survived: 7, score: encodeLeaderboardScore({ difficulty: 'kobayashiMaru', score: 1800, wavesSurvived: 7 }), kills: 44 },
+    { id: 2, difficulty: 'realistic', waves_survived: 10, score: 9200, kills: 31 },
+    { id: 3, difficulty: 'hell', waves_survived: 9, score: 8100, kills: 29 },
+  ], null);
+
+  assert.deepEqual(entries.map(entry => entry.id), [2, 3, 1]);
+});
+
 test('kobayashi maru trades away economy slack and becomes harsher than hell by wave sixteen', () => {
   const units = ['turret', 'mvg', 'crew', 'airfield', 'hawk', 'gepard', 'irist'];
   const realisticSum = units.reduce((sum, unit) => sum + getUnitBalanceScore(MODES.realistic, unit), 0);

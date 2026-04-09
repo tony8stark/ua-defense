@@ -30,6 +30,11 @@ export function decodeLeaderboardScore(entry) {
   };
 }
 
+function getMixedSortScore(entry) {
+  if (!isEndlessDifficulty(entry?.difficulty)) return entry?.score || 0;
+  return decodeLeaderboardScore(entry).secondary;
+}
+
 export function sortLeaderboardEntries(entries, difficulty) {
   const list = [...entries];
   if (isEndlessDifficulty(difficulty)) {
@@ -37,6 +42,14 @@ export function sortLeaderboardEntries(entries, difficulty) {
       (b.waves_survived - a.waves_survived)
       || (b.score - a.score)
       || (b.kills - a.kills)
+      || String(a.created_at || '').localeCompare(String(b.created_at || '')));
+  }
+
+  if (!difficulty) {
+    return list.sort((a, b) =>
+      (getMixedSortScore(b) - getMixedSortScore(a))
+      || (b.kills - a.kills)
+      || (b.waves_survived - a.waves_survived)
       || String(a.created_at || '').localeCompare(String(b.created_at || '')));
   }
 

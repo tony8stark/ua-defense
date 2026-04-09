@@ -308,5 +308,5 @@ function markEnemyUnderFire(g, enemyId, towerId) {
   const enemy = g.enemies.find(candidate => candidate.id === enemyId && candidate.hp > 0);
   const tower = g.towers.find(candidate => candidate.id === towerId && candidate.hp > 0);
   if (!enemy || !tower) return;
-  applyRetaliationTarget(enemy, towerId);
+  applyRetaliationTarget(enemy, towerId, Math.random(), g.mode, g.wave);
 }

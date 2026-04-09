@@ -8,6 +8,7 @@ import { setMuted } from '../src/audio/SoundManager.js';
 import { getBattleCalloutText, getUpkeepQuip, getWaveFundingQuip } from '../src/data/battleQuips.js';
 import { MODES } from '../src/data/difficulty.js';
 import { updateIskander, updatePatriotAnim } from '../src/game/iskander.js';
+import { getEnemySpawnProfile } from '../src/game/waves.js';
 import {
   advanceEnemyNavigation,
   applyRetaliationTarget,
@@ -16,8 +17,10 @@ import {
   getDeepIngressChance,
   getEnemyNavPoint,
   getIngressEdges,
+  getRetaliationChance,
   shouldUseDeepIngress,
 } from '../src/game/enemy-ai.js';
+import { getWaveUpkeepCost } from '../src/game/economy.js';
 import { recordTurretShot } from '../src/game/overheat.js';
 import { canPlaceTowerAt } from '../src/game/placement.js';
 import { spawnEnemy } from '../src/game/spawner.js';
@@ -234,4 +237,31 @@ test('battle callout helper shifts mood by difficulty while keeping the event re
   assert.match(training, /повітряна|працюємо|спокійн/i);
   assert.match(endless, /знову|дихаємо|вижив|трима/i);
   assert.match(patriot, /перехоп|patriot|дих/i);
+});
+
+test('wave upkeep is currently disabled so post-wave cash is not shaved down', () => {
+  const g = createGameState(CITIES.kyiv, MODES.kobayashiMaru);
+  g.towers.push({
+    id: 1,
+    type: 'turret',
+    hp: MODES.kobayashiMaru.turret.maxHp,
+    maxHp: MODES.kobayashiMaru.turret.maxHp,
+    cost: MODES.kobayashiMaru.turret.baseCost,
+    level: 2,
+  });
+
+  assert.equal(getWaveUpkeepCost(g), 0);
+  assert.equal(MODES.kobayashiMaru.upkeepMul, 0);
+});
+
+test('early kobayashi retaliation and tower damage leave fragile defenses alive after one shahed pass', () => {
+  const earlyRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 0);
+  const lateRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 10);
+  const earlyShahed = getEnemySpawnProfile(MODES.kobayashiMaru, 0, 'shahed', MODES.kobayashiMaru.shahed);
+  const towerHit = Math.round(earlyShahed.dmg * MODES.kobayashiMaru.towerDamageMul);
+
+  assert.ok(earlyRetaliation < lateRetaliation, `endless retaliation should ramp up over time: ${earlyRetaliation} vs ${lateRetaliation}`);
+  assert.ok(earlyRetaliation < 0.5, `opening retaliation should not instantly focus-fire every defense: ${earlyRetaliation}`);
+  assert.ok(towerHit < MODES.kobayashiMaru.mvg.maxHp, `early shahed tower strike should leave MVG alive: ${towerHit} vs ${MODES.kobayashiMaru.mvg.maxHp}`);
+  assert.ok(towerHit < MODES.kobayashiMaru.crew.maxHp, `early shahed tower strike should leave crew alive: ${towerHit} vs ${MODES.kobayashiMaru.crew.maxHp}`);
 });

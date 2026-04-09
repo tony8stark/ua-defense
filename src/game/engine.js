@@ -249,7 +249,8 @@ export function update(g) {
       }
       // High-altitude attack that hits: -30% damage
       const altDmgMul = isHighAttack ? 0.70 : 1.0;
-      to.hp = Math.max(0, to.hp - Math.round(en.dmg * altDmgMul));
+      const towerDamageMul = en.target.mode === 'tower' ? (g.mode.towerDamageMul || 1) : 1;
+      to.hp = Math.max(0, to.hp - Math.round(en.dmg * altDmgMul * towerDamageMul));
 
       if (en.target.mode === 'tower') {
         const name = to.callsign ? `"${to.callsign}" (${DEF_META[to.type]?.name})` : DEF_META[to.type]?.name || 'Позицію';

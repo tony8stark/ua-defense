@@ -20,6 +20,18 @@ export const ENEMY_RETALIATION_CHANCE = {
   kalibr: 0.6,
 };
 
+export function getRetaliationChance(type, mode = null, waveIndex = 0) {
+  const base = ENEMY_RETALIATION_CHANCE[type] || 0;
+  if (!base) return 0;
+
+  let mul = 1;
+  if (mode?.endless) {
+    mul *= clamp(0.42 + waveIndex * 0.065, 0.42, 1);
+  }
+
+  return Math.min(0.95, Math.round(base * mul * 100) / 100);
+}
+
 function uniqueSpawnEdges(city) {
   return [...new Set((city.spawnEdges || []).map(edge => edge.side))];
 }
@@ -98,8 +110,8 @@ export function createGuidedWaypoints(city, spawn, targetPoint, roll = Math.rand
   ];
 }
 
-export function applyRetaliationTarget(enemy, towerId, roll = Math.random()) {
-  const chance = ENEMY_RETALIATION_CHANCE[enemy.type] || 0;
+export function applyRetaliationTarget(enemy, towerId, roll = Math.random(), mode = null, waveIndex = 0) {
+  const chance = getRetaliationChance(enemy.type, mode, waveIndex);
   if (!towerId || !chance || roll >= chance) return false;
 
   const target = { mode: 'tower', id: towerId };

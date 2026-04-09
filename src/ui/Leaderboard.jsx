@@ -13,7 +13,7 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
   useEffect(() => {
     fetchLeaderboard(filterCity || null, filterDiff || null)
       .then(data => {
-        setEntries(sortLeaderboardEntries(data, filterDiff || null));
+        setEntries(sortLeaderboardEntries(data, filterDiff || null).slice(0, 25));
         setLoading(false);
       })
       .catch(() => setLoading(false));

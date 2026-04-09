@@ -1,4 +1,6 @@
 // Supabase client for leaderboard
+import { MODES } from '../data/difficulty.js';
+
 const SUPABASE_URL = 'https://ogamfoebvducswmxtjas.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3mIhORG6U3O0fW82BghX2Q_0V679nuk';
 
@@ -33,6 +35,13 @@ export async function submitScore({ name, score, city, difficulty, wavesSurvived
 }
 
 export async function fetchLeaderboard(city, difficulty, limit = 25) {
+  if (!difficulty) {
+    const perMode = await Promise.all(
+      Object.keys(MODES).map(modeKey => fetchLeaderboard(city, modeKey, limit)),
+    );
+    return perMode.flat();
+  }
+
   const params = new URLSearchParams({
     select: 'id,name,score,city,difficulty,waves_survived,kills,total_spawned,device,created_at',
     order: 'score.desc',
