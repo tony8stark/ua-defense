@@ -321,11 +321,135 @@ export function trySpawnOrlan(g) {
 
 const WEATHER_TYPES = {
   clear: { id: 'clear', label: '☀️ Ясно', effects: {} },
-  fog: { id: 'fog', label: '🌫️ Туман', effects: { rangeMul: 0.7 } },
+  fog: { id: 'fog', label: '🌫️ Туман', effects: { rangeMul: 0.72, stealthRevealMul: 0.58, visibility: 0.58 } },
+  rain: { id: 'rain', label: '🌧️ Дощ', effects: { rangeMul: 0.94, accuracyMul: 0.94, turretAccMul: 0.92, fpvAccMul: 0.8, airfieldAccMul: 0.78, droneSpeedMul: 0.94, droneMissChance: 0.06 } },
   night: { id: 'night', label: '🌙 Ніч', effects: { turretAccMul: 0.8, visibility: 0.6 } },
   wind: { id: 'wind', label: '💨 Вітер', effects: { accuracyMul: 0.85, drift: true } },
-  storm: { id: 'storm', label: '⛈️ Шквал', effects: { rangeMul: 0.82, turretAccMul: 0.72, accuracyMul: 0.8, drift: true, visibility: 0.55 } },
+  storm: { id: 'storm', label: '⛈️ Шквал', effects: { rangeMul: 0.82, turretAccMul: 0.72, accuracyMul: 0.8, fpvAccMul: 0.76, airfieldAccMul: 0.74, drift: true, visibility: 0.55, droneSpeedMul: 0.8, droneMissChance: 0.2 } },
 };
+
+const WEATHER_SENSITIVE_DRONES = new Set(['shahed', 'geran', 'shahed238', 'lancet', 'guided', 'orlan']);
+
+export function getWeatherRangeMultiplier(weather, unitType) {
+  const effects = weather?.effects || {};
+  let mul = effects.rangeMul || 1;
+  if (unitType === 'crew') mul *= effects.fpvRangeMul || 1;
+  if (unitType === 'airfield') mul *= effects.airfieldRangeMul || 1;
+  return mul;
+}
+
+export function getWeatherAccuracyMultiplier(weather, unitType) {
+  const effects = weather?.effects || {};
+  let mul = effects.accuracyMul || 1;
+
+  if (['turret', 'mvg', 'hawk', 'gepard', 'irist'].includes(unitType)) {
+    mul *= effects.turretAccMul || 1;
+  }
+  if (unitType === 'crew') mul *= effects.fpvAccMul || 1;
+  if (unitType === 'airfield') mul *= effects.airfieldAccMul || 1;
+
+  return mul;
+}
+
+export function getWeatherStealthRevealMultiplier(weather) {
+  const effects = weather?.effects || {};
+  return effects.stealthRevealMul || effects.visibility || 1;
+}
+
+export function getWeatherEnemySpeedMultiplier(weather, enemyType) {
+  if (!WEATHER_SENSITIVE_DRONES.has(enemyType)) return 1;
+  return weather?.effects?.droneSpeedMul || 1;
+}
+
+export function getWeatherEnemyMissChance(weather, enemyType) {
+  if (!WEATHER_SENSITIVE_DRONES.has(enemyType)) return 0;
+  return weather?.effects?.droneMissChance || 0;
+}
+
+export function getWeatherVisualProfile(weather) {
+  const id = typeof weather === 'string' ? weather : weather?.id;
+
+  switch (id) {
+    case 'fog':
+      return {
+        fogLayers: 4,
+        fogAlpha: 0.12,
+        edgeVignetteAlpha: 0.14,
+        cloudVeilAlpha: 0.1,
+        rainLayers: 0,
+        rainOpacity: 0,
+        rainSlant: 0,
+        rainSpeed: 0,
+        groundMistAlpha: 0.06,
+        lightningAlpha: 0,
+      };
+    case 'rain':
+      return {
+        fogLayers: 0,
+        fogAlpha: 0,
+        edgeVignetteAlpha: 0.05,
+        cloudVeilAlpha: 0.1,
+        rainLayers: 2,
+        rainOpacity: 0.16,
+        rainSlant: 14,
+        rainSpeed: 3.2,
+        groundMistAlpha: 0.05,
+        lightningAlpha: 0,
+      };
+    case 'storm':
+      return {
+        fogLayers: 1,
+        fogAlpha: 0.05,
+        edgeVignetteAlpha: 0.18,
+        cloudVeilAlpha: 0.22,
+        rainLayers: 3,
+        rainOpacity: 0.22,
+        rainSlant: 18,
+        rainSpeed: 4.4,
+        groundMistAlpha: 0.08,
+        lightningAlpha: 0.18,
+      };
+    case 'night':
+      return {
+        fogLayers: 0,
+        fogAlpha: 0,
+        edgeVignetteAlpha: 0.12,
+        cloudVeilAlpha: 0.18,
+        rainLayers: 0,
+        rainOpacity: 0,
+        rainSlant: 0,
+        rainSpeed: 0,
+        groundMistAlpha: 0,
+        lightningAlpha: 0,
+      };
+    case 'wind':
+      return {
+        fogLayers: 0,
+        fogAlpha: 0,
+        edgeVignetteAlpha: 0.04,
+        cloudVeilAlpha: 0.04,
+        rainLayers: 0,
+        rainOpacity: 0,
+        rainSlant: 0,
+        rainSpeed: 0,
+        groundMistAlpha: 0,
+        lightningAlpha: 0,
+      };
+    default:
+      return {
+        fogLayers: 0,
+        fogAlpha: 0,
+        edgeVignetteAlpha: 0,
+        cloudVeilAlpha: 0,
+        rainLayers: 0,
+        rainOpacity: 0,
+        rainSlant: 0,
+        rainSpeed: 0,
+        groundMistAlpha: 0,
+        lightningAlpha: 0,
+      };
+  }
+}
 
 export function getWeatherPool(mode = {}, waveIndex = 0) {
   const lateWave = waveIndex >= 6;
@@ -335,14 +459,15 @@ export function getWeatherPool(mode = {}, waveIndex = 0) {
   const pool = [
     WEATHER_TYPES.clear,
     WEATHER_TYPES.fog,
+    WEATHER_TYPES.rain,
     WEATHER_TYPES.night,
     WEATHER_TYPES.wind,
   ];
 
   if (!lateWave && !mode.endless && !harshMode) pool.unshift(WEATHER_TYPES.clear);
-  if (lateWave || harshMode) pool.push(WEATHER_TYPES.fog, WEATHER_TYPES.wind);
-  if (endlessLate || harshMode) pool.push(WEATHER_TYPES.storm, WEATHER_TYPES.night);
-  if (endlessLate) pool.push(WEATHER_TYPES.storm, WEATHER_TYPES.wind);
+  if (lateWave || harshMode) pool.push(WEATHER_TYPES.fog, WEATHER_TYPES.rain, WEATHER_TYPES.wind);
+  if (endlessLate || harshMode) pool.push(WEATHER_TYPES.storm, WEATHER_TYPES.night, WEATHER_TYPES.rain);
+  if (endlessLate) pool.push(WEATHER_TYPES.storm, WEATHER_TYPES.wind, WEATHER_TYPES.rain);
 
   return pool;
 }
@@ -352,21 +477,65 @@ export function rollWeather(mode, waveIndex, roll = Math.random()) {
   return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))];
 }
 
+function drawFogMass(ctx, g, profile) {
+  const drift = g.tick * 0.18;
+  for (let i = 0; i < profile.fogLayers; i++) {
+    const cx = ((g.city.width * (0.18 + i * 0.22)) + drift * (i + 1) * 0.7) % (g.city.width + 240) - 120;
+    const cy = g.city.height * (0.2 + (i % 3) * 0.24);
+    const radius = g.city.width * (0.22 + i * 0.06);
+    const fog = ctx.createRadialGradient(cx, cy, radius * 0.18, cx, cy, radius);
+    fog.addColorStop(0, `rgba(214,223,230,${profile.fogAlpha * 1.15})`);
+    fog.addColorStop(0.55, `rgba(188,198,208,${profile.fogAlpha * 0.75})`);
+    fog.addColorStop(1, 'rgba(188,198,208,0)');
+    ctx.fillStyle = fog;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  }
+
+  const vignette = ctx.createRadialGradient(
+    g.city.width / 2, g.city.height / 2, g.city.width * 0.18,
+    g.city.width / 2, g.city.height / 2, g.city.width * 0.78,
+  );
+  vignette.addColorStop(0, 'rgba(16,24,39,0)');
+  vignette.addColorStop(1, `rgba(148,163,184,${profile.edgeVignetteAlpha})`);
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, g.city.width, g.city.height);
+}
+
+function drawRainSheets(ctx, g, profile, color) {
+  for (let layer = 0; layer < profile.rainLayers; layer++) {
+    const speed = profile.rainSpeed * (1 + layer * 0.34);
+    const offset = (g.tick * speed) % (34 + layer * 10);
+    ctx.strokeStyle = `rgba(${color},${profile.rainOpacity * (1 - layer * 0.22)})`;
+    ctx.lineWidth = 1.2 + layer * 0.55;
+
+    for (let x = -80; x < g.city.width + 80; x += 20 + layer * 9) {
+      ctx.beginPath();
+      ctx.moveTo(x + offset, -16);
+      ctx.lineTo(x - profile.rainSlant + offset, g.city.height + 24);
+      ctx.stroke();
+    }
+  }
+}
+
 export function drawWeatherOverlay(ctx, g) {
   const w = g.weather;
   if (!w || w.id === 'clear') return;
 
+  const profile = getWeatherVisualProfile(w);
   ctx.save();
   if (w.id === 'fog') {
-    // Fog overlay
-    const fog = ctx.createRadialGradient(
-      g.city.width / 2, g.city.height / 2, 100,
-      g.city.width / 2, g.city.height / 2, g.city.width * 0.6
-    );
-    fog.addColorStop(0, 'rgba(180,190,200,0)');
-    fog.addColorStop(1, 'rgba(180,190,200,0.15)');
-    ctx.fillStyle = fog;
+    ctx.fillStyle = `rgba(214,223,230,${profile.cloudVeilAlpha})`;
     ctx.fillRect(0, 0, g.city.width, g.city.height);
+    drawFogMass(ctx, g, profile);
+  } else if (w.id === 'rain') {
+    ctx.fillStyle = `rgba(125, 211, 252, ${profile.cloudVeilAlpha})`;
+    ctx.fillRect(0, 0, g.city.width, g.city.height);
+    drawRainSheets(ctx, g, profile, '186, 230, 253');
+    const mist = ctx.createLinearGradient(0, g.city.height * 0.62, 0, g.city.height);
+    mist.addColorStop(0, 'rgba(186,230,253,0)');
+    mist.addColorStop(1, `rgba(214,228,240,${profile.groundMistAlpha})`);
+    ctx.fillStyle = mist;
+    ctx.fillRect(0, g.city.height * 0.62, g.city.width, g.city.height * 0.38);
   } else if (w.id === 'night') {
     // Dark overlay with glow around buildings
     ctx.fillStyle = 'rgba(0,0,15,0.35)';
@@ -382,7 +551,7 @@ export function drawWeatherOverlay(ctx, g) {
     }
   } else if (w.id === 'wind' || w.id === 'storm') {
     if (w.id === 'storm') {
-      ctx.fillStyle = 'rgba(15,23,42,0.18)';
+      ctx.fillStyle = `rgba(15,23,42,${profile.cloudVeilAlpha})`;
       ctx.fillRect(0, 0, g.city.width, g.city.height);
     }
     // Wind streaks
@@ -396,13 +565,18 @@ export function drawWeatherOverlay(ctx, g) {
       ctx.stroke();
     }
     if (w.id === 'storm') {
-      ctx.strokeStyle = 'rgba(148,163,184,0.12)';
-      ctx.lineWidth = 2;
-      for (let x = -40; x < g.city.width + 40; x += 90) {
-        ctx.beginPath();
-        ctx.moveTo(x + offset * 0.6, -20);
-        ctx.lineTo(x + 25 + offset * 0.6, g.city.height + 20);
-        ctx.stroke();
+      drawRainSheets(ctx, g, profile, '203, 213, 225');
+      drawFogMass(ctx, g, profile);
+      const mist = ctx.createLinearGradient(0, g.city.height * 0.55, 0, g.city.height);
+      mist.addColorStop(0, 'rgba(148,163,184,0)');
+      mist.addColorStop(1, `rgba(203,213,225,${profile.groundMistAlpha})`);
+      ctx.fillStyle = mist;
+      ctx.fillRect(0, g.city.height * 0.55, g.city.width, g.city.height * 0.45);
+
+      const lightningPulse = Math.max(0, Math.sin(g.tick * 0.12) - 0.92) / 0.08;
+      if (lightningPulse > 0) {
+        ctx.fillStyle = `rgba(241,245,249,${profile.lightningAlpha * lightningPulse})`;
+        ctx.fillRect(0, 0, g.city.width, g.city.height);
       }
     }
   }

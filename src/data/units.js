@@ -76,6 +76,28 @@ export function getRepairCost(building, bonuses = {}) {
   return Math.round(repairAmount * REPAIR_COST_PER_HP * (1 - repairDiscount));
 }
 
+export function getRepairActionState(item, options = {}) {
+  const hp = item?.hp || 0;
+  const maxHp = item?.maxHp || 0;
+  const amount = Math.max(0, maxHp - hp);
+  const isTower = !!DEF_META[item?.type];
+  const cost = getRepairCost(item, { repairDiscount: options.repairDiscount || 0 });
+
+  let reason = null;
+  if (hp <= 0) reason = 'destroyed';
+  else if (amount <= 0) reason = 'full';
+  else if (!isTower && options.waveActive) reason = 'betweenWaves';
+
+  return {
+    isTower,
+    damaged: hp > 0 && amount > 0,
+    amount,
+    cost,
+    allowed: reason === null,
+    reason,
+  };
+}
+
 export function getUnitBalanceScore(mode, unitType, options = {}) {
   const unit = mode[unitType];
   if (!unit) return 0;

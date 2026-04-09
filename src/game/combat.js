@@ -3,7 +3,7 @@ import { TICK, dist, ang, rnd, chance, uid } from './physics.js';
 import { DEF_META } from '../data/units.js';
 import { addLog, registerKill, recordUnitKill, getTrivogaFireRateMul, getBuildingBonuses } from './state.js';
 import { applyRetaliationTarget, isEnemyInCruiseIngress } from './enemy-ai.js';
-import { getEWMultipliers } from './events.js';
+import { getEWMultipliers, getWeatherAccuracyMultiplier, getWeatherRangeMultiplier } from './events.js';
 import { coolTurretOverheat, recordTurretShot } from './overheat.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 import { getKillQuip } from '../data/battleQuips.js';
@@ -11,7 +11,7 @@ import { getKillQuip } from '../data/battleQuips.js';
 export function updateCombat(g) {
   const m = g.mode;
   const ew = getEWMultipliers(g);
-  const weather = g.weather?.effects || {};
+  const weather = g.weather;
 
   // TURRETS, CREWS, HAWK, GEPARD, IRIS-T
   const SLOW_SPEED_THRESHOLD = 1.5;
@@ -36,7 +36,7 @@ export function updateCombat(g) {
     let closest = null, closestDist = Infinity;
     // Terrain bonus: elevation gives +15% range
     const onElevation = g.city.terrainTiles?.some(t => t.type === 'elevation' && dist(tw, t) < TERRAIN_SNAP);
-    const effectiveRange = tw.range * (weather.rangeMul || 1) * (1 + bb.range) * (onElevation ? 1.15 : 1);
+    const effectiveRange = tw.range * getWeatherRangeMultiplier(weather, tw.type) * (1 + bb.range) * (onElevation ? 1.15 : 1);
     for (const en of g.enemies) {
       // Stealth enemies can't be targeted
       if (en.stealth) continue;
@@ -72,8 +72,9 @@ export function updateCombat(g) {
       const mvgFastBonus = (tw.type === 'mvg' && closest.speed > SLOW_SPEED_THRESHOLD) ? 0.15 : 0;
       // Тривога bonuses: MVG +20% acc, HAWK 100% hit
       const trivogaAcc = trivogaOn ? (tw.type === 'mvg' ? 0.20 : tw.type === 'hawk' ? 1.0 : 0) : 0;
+      const weatherAccMul = getWeatherAccuracyMultiplier(weather, tw.type);
       const baseHit = tw.type === 'hawk' && trivogaOn ? 1.0
-        : (tw.hitChance + accBonus + mvgFastBonus + trivogaAcc) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1);
+        : (tw.hitChance + accBonus + mvgFastBonus + trivogaAcc) * weatherAccMul;
       // Тривога: turret fires at up to 3 targets simultaneously
       const targets = (tw.type === 'turret' && trivogaOn) ? findMultiTargets(g, tw, effectiveRange, 3) : [closest];
       for (const tgt of targets) {
@@ -102,7 +103,7 @@ export function updateCombat(g) {
           x: tw.x + rnd(-3, 3), y: tw.y + rnd(-3, 3),
           tid: closest.id, tx: closest.x + rnd(-5, 5), ty: closest.y + rnd(-5, 5),
           damage: Math.round(tw.damage * dmgMul), speed: 9, color: DEF_META.gepard.color,
-          id: uid(), hitChance: (tw.hitChance + accBonus) * (weather.accuracyMul || 1),
+          id: uid(), hitChance: (tw.hitChance + accBonus) * getWeatherAccuracyMultiplier(weather, tw.type),
           sourceTowerId: tw.id,
         });
       }
@@ -110,7 +111,7 @@ export function updateCombat(g) {
       playFPVLaunch();
       // Тривога: IRIS-T gets 100% hit chance
       const iristHit = trivogaOn ? 1.0
-        : Math.min(0.98, (tw.hitChance + accBonus) * (weather.turretAccMul || 1) * (weather.accuracyMul || 1));
+        : Math.min(0.98, (tw.hitChance + accBonus) * getWeatherAccuracyMultiplier(weather, tw.type));
       markEnemyUnderFire(g, closest.id, tw.id);
       g.projectiles.push({
         x: tw.x, y: tw.y, tid: closest.id, tx: closest.x, ty: closest.y,
@@ -157,7 +158,7 @@ export function updateCombat(g) {
     if (k.cooldown > 0) continue;
 
     let closest = null, closestDist = Infinity;
-    const kRange = k.range * (weather.rangeMul || 1);
+    const kRange = k.range * getWeatherRangeMultiplier(weather, 'airfield');
     for (const en of g.enemies) {
       if (en.stealth) continue;
       if (en.type === 'shahed238') continue;
@@ -171,7 +172,7 @@ export function updateCombat(g) {
       g.projectiles.push({
         x: k.x, y: k.y, tid: closest.id, tx: closest.x, ty: closest.y,
         damage: k.damage, speed: 5, color: DEF_META.airfield.color,
-        id: uid(), hitChance: k.hitChance * ew.kukurznikAccMul * (weather.accuracyMul || 1) * (trivogaOn ? 2.0 : 1.0),
+        id: uid(), hitChance: k.hitChance * ew.kukurznikAccMul * getWeatherAccuracyMultiplier(weather, 'airfield') * (trivogaOn ? 2.0 : 1.0),
         sourceTowerId: k.towerId,
       });
     }

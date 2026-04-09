@@ -26,7 +26,7 @@ export function getRetaliationChance(type, mode = null, waveIndex = 0) {
 
   let mul = 1;
   if (mode?.endless) {
-    mul *= clamp(0.42 + waveIndex * 0.065, 0.42, 1);
+    mul *= clamp(0.18 + waveIndex * 0.05, 0.18, 1);
   }
 
   return Math.min(0.95, Math.round(base * mul * 100) / 100);

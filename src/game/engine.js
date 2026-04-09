@@ -10,7 +10,17 @@ import { getWaveUpkeepCost } from './economy.js';
 import { flatWave, spawnEnemy, retarget, getTargetPoint } from './spawner.js';
 import { updateCombat } from './combat.js';
 import { updateIskander, updatePatriotAnim } from './iskander.js';
-import { trySpawnF16, updateF16, trySpawnEW, updateEW, trySpawnOrlan, trySpawnKh101, rollWeather } from './events.js';
+import {
+  getWeatherEnemyMissChance,
+  getWeatherEnemySpeedMultiplier,
+  trySpawnF16,
+  updateF16,
+  trySpawnEW,
+  updateEW,
+  trySpawnOrlan,
+  trySpawnKh101,
+  rollWeather,
+} from './events.js';
 import { shouldRevealStealthEnemy } from './stealth.js';
 import { getWaveDef, hasMoreWaves } from './waves.js';
 import { DEF_META } from '../data/units.js';
@@ -233,16 +243,27 @@ export function update(g) {
       driftY = Math.cos(g.tick * 0.03 + en.id * 7) * 0.15;
     }
 
-    en.x += (Math.cos(a) * en.speed + driftX) * TICK;
-    en.y += (Math.sin(a) * en.speed + driftY) * TICK;
+    const weatherSpeedMul = getWeatherEnemySpeedMultiplier(g.weather, en.type);
+    en.x += (Math.cos(a) * en.speed * weatherSpeedMul + driftX) * TICK;
+    en.y += (Math.sin(a) * en.speed * weatherSpeedMul + driftY) * TICK;
     en.angle = a;
 
     if (dist(en, to) < 28) {
       // High-altitude attack: 30% chance to miss target entirely (inaccurate dive)
       const isHighAttack = en.altitude === 'high' || en.altitude === 'climbing';
-      if (isHighAttack && chance(0.30)) {
-        addLog(g, '💨 Шахед промахнувся з висоти!');
-        g.floats.push({ x: en.x, y: en.y - 16, text: 'ПРОМАХ З ВИСОТИ', color: '#64748b', life: 45, ml: 45 });
+      const weatherMissChance = getWeatherEnemyMissChance(g.weather, en.type);
+      const terminalFailChance = Math.min(0.75, (isHighAttack ? 0.30 : 0) + weatherMissChance);
+      if (terminalFailChance > 0 && chance(terminalFailChance)) {
+        const weatherFailed = weatherMissChance > 0 && (!isHighAttack || chance(weatherMissChance / terminalFailChance));
+        addLog(g, weatherFailed ? '🌧️ Погода зірвала захід ворожого дрона!' : '💨 Шахед промахнувся з висоти!');
+        g.floats.push({
+          x: en.x,
+          y: en.y - 16,
+          text: weatherFailed ? 'ЗНЕСЛО ПОГОДОЮ' : 'ПРОМАХ З ВИСОТИ',
+          color: weatherFailed ? '#7dd3fc' : '#64748b',
+          life: 45,
+          ml: 45,
+        });
         en.hp = 0;
         g.explosions.push({ x: en.x + rnd(-30, 30), y: en.y + rnd(-30, 30), r: 18, life: 20, ml: 20 });
         continue;

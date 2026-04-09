@@ -256,12 +256,14 @@ test('wave upkeep is currently disabled so post-wave cash is not shaved down', (
 
 test('early kobayashi retaliation and tower damage leave fragile defenses alive after one shahed pass', () => {
   const earlyRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 0);
+  const waveThreeRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 3);
   const lateRetaliation = getRetaliationChance('shahed', MODES.kobayashiMaru, 10);
   const earlyShahed = getEnemySpawnProfile(MODES.kobayashiMaru, 0, 'shahed', MODES.kobayashiMaru.shahed);
   const towerHit = Math.round(earlyShahed.dmg * MODES.kobayashiMaru.towerDamageMul);
 
   assert.ok(earlyRetaliation < lateRetaliation, `endless retaliation should ramp up over time: ${earlyRetaliation} vs ${lateRetaliation}`);
-  assert.ok(earlyRetaliation < 0.5, `opening retaliation should not instantly focus-fire every defense: ${earlyRetaliation}`);
+  assert.ok(earlyRetaliation <= 0.15, `opening retaliation should stay forgiving: ${earlyRetaliation}`);
+  assert.ok(waveThreeRetaliation <= 0.25, `wave 3 retaliation should still be manageable on a thin budget: ${waveThreeRetaliation}`);
   assert.ok(towerHit < MODES.kobayashiMaru.mvg.maxHp, `early shahed tower strike should leave MVG alive: ${towerHit} vs ${MODES.kobayashiMaru.mvg.maxHp}`);
   assert.ok(towerHit < MODES.kobayashiMaru.crew.maxHp, `early shahed tower strike should leave crew alive: ${towerHit} vs ${MODES.kobayashiMaru.crew.maxHp}`);
 });

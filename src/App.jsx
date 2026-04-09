@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
-import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, getRepairCost } from './data/units.js';
+import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, getRepairActionState } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
 import { canPlaceTowerAt, getPlacementPreview } from './game/placement.js';
 import {
@@ -276,20 +276,31 @@ export default function App() {
     syncUI();
   }, []);
 
-  // Repair building
-  const handleRepair = useCallback((building) => {
+  // Repair tower/building
+  const handleRepair = useCallback((item) => {
     const g = gRef.current;
-    if (!g || g.waveActive) return;
-    const b = g.buildings.find(bl => bl.key === building.key);
-    if (!b || b.hp <= 0 || b.hp >= b.maxHp) return;
-    const bb = getBuildingBonuses(g);
-    const cost = getRepairCost(b, bb);
-    if (g.money < cost) return;
+    if (!g) return;
 
-    b.hp = b.maxHp;
-    g.money -= cost;
-    trackRepairSpend(g, b.key, cost);
-    addLog(g, `🔧 ${b.name} відремонтовано (-${cost}💰)`);
+    const bonuses = getBuildingBonuses(g);
+    const tower = item.id ? g.towers.find(tw => tw.id === item.id) : null;
+    const building = !tower && item.key ? g.buildings.find(bl => bl.key === item.key) : null;
+    const target = tower || building;
+    if (!target) return;
+
+    const repairState = getRepairActionState(target, {
+      waveActive: g.waveActive,
+      repairDiscount: bonuses.repairDiscount,
+    });
+    if (!repairState.allowed || g.money < repairState.cost) return;
+
+    target.hp = target.maxHp;
+    g.money -= repairState.cost;
+    trackRepairSpend(g, tower ? `${tower.type}:${tower.id}` : target.key, repairState.cost);
+
+    const targetName = tower
+      ? `${DEF_META[tower.type].name}${tower.callsign ? ` "${tower.callsign}"` : ''}`
+      : target.name;
+    addLog(g, `🔧 ${targetName} відремонтовано (-${repairState.cost}💰)`);
     setCtxMenu(null);
     syncUI();
   }, []);

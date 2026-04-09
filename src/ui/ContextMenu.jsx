@@ -1,4 +1,4 @@
-import { DEF_META, UPGRADES, getUpgradeCost, getSellPrice, getRepairCost } from '../data/units.js';
+import { DEF_META, UPGRADES, getUpgradeCost, getSellPrice, getRepairActionState } from '../data/units.js';
 
 export default function ContextMenu({ target, money, waveActive, repairDiscount = 0, onSell, onUpgrade, onRepair, onClose }) {
   if (!target) return null;
@@ -29,7 +29,7 @@ export default function ContextMenu({ target, money, waveActive, repairDiscount 
           borderRadius: 10, padding: '12px 14px', minWidth: 200,
           backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
-          {isTower && <TowerMenu item={item} money={money} waveActive={waveActive} onSell={onSell} onUpgrade={onUpgrade} />}
+          {isTower && <TowerMenu item={item} money={money} waveActive={waveActive} repairDiscount={repairDiscount} onSell={onSell} onUpgrade={onUpgrade} onRepair={onRepair} />}
           {isBuilding && <BuildingMenu item={item} money={money} waveActive={waveActive} repairDiscount={repairDiscount} onRepair={onRepair} />}
         </div>
       </div>
@@ -37,13 +37,14 @@ export default function ContextMenu({ target, money, waveActive, repairDiscount 
   );
 }
 
-function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
+function TowerMenu({ item, money, waveActive, repairDiscount, onSell, onUpgrade, onRepair }) {
   const meta = DEF_META[item.type];
   const level = item.level || 0;
   const maxLevel = UPGRADES[item.type]?.length - 1 || 0;
   const canUpgrade = level < maxLevel;
   const upgradeCost = canUpgrade ? getUpgradeCost(item, item._mode) : null;
   const sellPrice = getSellPrice(item);
+  const repairState = getRepairActionState(item, { waveActive, repairDiscount });
 
   return (
     <div>
@@ -61,6 +62,24 @@ function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
           <>HP: {item.hp}/{item.maxHp} · 🪤 Приманка</>
         )}
       </div>
+
+      {repairState.damaged && (
+        <button
+          onClick={() => onRepair(item)}
+          disabled={money < repairState.cost}
+          style={{
+            display: 'block', width: '100%',
+            padding: '8px 10px', fontSize: 13, fontWeight: 700,
+            background: money >= repairState.cost ? '#38bdf820' : '#1e293b',
+            color: money >= repairState.cost ? '#38bdf8' : '#64748b',
+            border: `1px solid ${money >= repairState.cost ? '#38bdf844' : '#1e293b'}`,
+            borderRadius: 6, marginBottom: 4, minHeight: 44,
+          }}
+        >
+          🔧 Ремонт — 💰{repairState.cost} (+{repairState.amount} HP)
+          {waveActive && <div style={{ fontSize: 11, color: '#7dd3fc', marginTop: 2 }}>Польовий ремонт доступний під час хвилі</div>}
+        </button>
+      )}
 
       {canUpgrade && (
         <button
@@ -99,9 +118,7 @@ function TowerMenu({ item, money, waveActive, onSell, onUpgrade }) {
 }
 
 function BuildingMenu({ item, money, waveActive, repairDiscount, onRepair }) {
-  const damaged = item.hp < item.maxHp && item.hp > 0;
-  const repairAmount = item.maxHp - item.hp;
-  const repairCost = getRepairCost(item, { repairDiscount });
+  const repairState = getRepairActionState(item, { waveActive, repairDiscount });
 
   return (
     <div>
@@ -117,21 +134,21 @@ function BuildingMenu({ item, money, waveActive, repairDiscount, onRepair }) {
         </div>
       )}
 
-      {damaged && (
+      {repairState.damaged && (
         <button
           onClick={() => onRepair(item)}
-          disabled={money < repairCost || waveActive}
+          disabled={money < repairState.cost || !repairState.allowed}
           style={{
             display: 'block', width: '100%',
             padding: '8px 10px', fontSize: 13, fontWeight: 700,
-            background: money >= repairCost && !waveActive ? '#4ade8020' : '#1e293b',
-            color: money >= repairCost && !waveActive ? '#4ade80' : '#64748b',
-            border: `1px solid ${money >= repairCost && !waveActive ? '#4ade8044' : '#1e293b'}`,
+            background: money >= repairState.cost && repairState.allowed ? '#4ade8020' : '#1e293b',
+            color: money >= repairState.cost && repairState.allowed ? '#4ade80' : '#64748b',
+            border: `1px solid ${money >= repairState.cost && repairState.allowed ? '#4ade8044' : '#1e293b'}`,
             borderRadius: 6, minHeight: 44,
           }}
         >
-          🔧 Ремонт — 💰{repairCost} (+{repairAmount} HP)
-          {waveActive && <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>Тільки між хвилями</div>}
+          🔧 Ремонт — 💰{repairState.cost} (+{repairState.amount} HP)
+          {repairState.reason === 'betweenWaves' && <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>Тільки між хвилями</div>}
         </button>
       )}
 
@@ -139,7 +156,7 @@ function BuildingMenu({ item, money, waveActive, repairDiscount, onRepair }) {
         <div style={{ fontSize: 12, color: '#7f1d1d' }}>Знищено. Ремонт неможливий.</div>
       )}
 
-      {!damaged && item.hp > 0 && (
+      {!repairState.damaged && item.hp > 0 && (
         <div style={{ fontSize: 12, color: '#4ade80' }}>Стан: повний</div>
       )}
     </div>

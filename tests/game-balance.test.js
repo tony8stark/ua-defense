@@ -286,6 +286,7 @@ test('low-flying shahed can stay hidden deep into the map and only pop up near t
     iskander: { interval: [100, 120] },
   };
   const g = createGameState(city, mode);
+  g.weather = { id: 'clear', effects: {} };
 
   g.towers.push({ id: 1, type: 'turret', x: 260, y: 300, hp: 100, maxHp: 100 });
 
