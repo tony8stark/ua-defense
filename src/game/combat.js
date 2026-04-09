@@ -180,43 +180,45 @@ export function updateCombat(g) {
 
   // PROJECTILES
   for (const p of g.projectiles) {
-    const tgt = g.enemies.find(e => e.id === p.tid);
+    const tgt = g.enemies.find(e => e.id === p.tid && e.hp > 0);
+    if (!tgt) {
+      p.hit = true;
+      continue;
+    }
     if (tgt) { p.tx = tgt.x; p.ty = tgt.y; }
     const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.sqrt(dx * dx + dy * dy);
 
     if (d < p.speed * TICK * 2) {
       p.hit = true;
-      if (tgt) {
-        // Guided drones can dodge (IRIS-T and F-16 missiles bypass)
-        const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile && !p.isIRIST;
-        // High-altitude targets: -40% accuracy for projectiles (IRIS-T unaffected)
-        const altPenalty = (tgt.altitude === 'high' && !p.isIRIST && !p.isHawkMissile) ? 0.60 : 1.0;
-        // Weather accuracy already applied at projectile creation — no second multiplier
-        if (!dodged && chance((p.hitChance || 0.5) * altPenalty)) {
-          tgt.hp -= p.damage;
-          g.explosions.push({ x: p.tx, y: p.ty, r: 10, life: 12, ml: 12 });
-          // Track kill on source tower
-          if (tgt.hp <= 0) {
-            g.money += tgt.reward;
-            g.score += tgt.reward;
-            g.killed++;
-            if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
-            registerKill(g, tgt.reward, tgt.x, tgt.y);
-            playExplosion(false);
-            // Credit kill to tower
-            if (p.sourceTowerId) recordUnitKill(g, p.sourceTowerId);
-            // Random kill quip
-            const quip = getKillQuip(tgt.type);
-            if (quip) addLog(g, quip);
-            g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });
-            for (let i = 0; i < 6; i++) {
-              g.particles.push({ x: tgt.x, y: tgt.y, vx: rnd(-3, 3), vy: rnd(-3, 3), life: rnd(15, 30), color: tgt.color });
-            }
+      // Guided drones can dodge (IRIS-T and F-16 missiles bypass)
+      const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile && !p.isIRIST;
+      // High-altitude targets: -40% accuracy for projectiles (IRIS-T unaffected)
+      const altPenalty = (tgt.altitude === 'high' && !p.isIRIST && !p.isHawkMissile) ? 0.60 : 1.0;
+      // Weather accuracy already applied at projectile creation — no second multiplier
+      if (!dodged && chance((p.hitChance || 0.5) * altPenalty)) {
+        tgt.hp -= p.damage;
+        g.explosions.push({ x: p.tx, y: p.ty, r: 10, life: 12, ml: 12 });
+        // Track kill on source tower
+        if (tgt.hp <= 0) {
+          g.money += tgt.reward;
+          g.score += tgt.reward;
+          g.killed++;
+          if (g.killedByType[tgt.type] !== undefined) g.killedByType[tgt.type]++;
+          registerKill(g, tgt.reward, tgt.x, tgt.y);
+          playExplosion(false);
+          // Credit kill to tower
+          if (p.sourceTowerId) recordUnitKill(g, p.sourceTowerId);
+          // Random kill quip
+          const quip = getKillQuip(tgt.type);
+          if (quip) addLog(g, quip);
+          g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });
+          for (let i = 0; i < 6; i++) {
+            g.particles.push({ x: tgt.x, y: tgt.y, vx: rnd(-3, 3), vy: rnd(-3, 3), life: rnd(15, 30), color: tgt.color });
           }
-        } else {
-          addFloat(g, p.tx + rnd(-8, 8), p.ty - 8, '•', '#475569');
-          g.particles.push({ x: p.tx + rnd(-15, 15), y: p.ty + rnd(-15, 15), vx: rnd(-0.5, 0.5), vy: rnd(-1, 0), life: 10, color: '#475569' });
         }
+      } else {
+        addFloat(g, p.tx + rnd(-8, 8), p.ty - 8, '•', '#475569');
+        g.particles.push({ x: p.tx + rnd(-15, 15), y: p.ty + rnd(-15, 15), vx: rnd(-0.5, 0.5), vy: rnd(-1, 0), life: 10, color: '#475569' });
       }
     } else {
       p.x += (dx / d) * p.speed * TICK;
@@ -239,10 +241,11 @@ export function updateCombat(g) {
       continue;
     }
 
-    let tgt = g.enemies.find(e => e.id === fd.tid);
+    let tgt = g.enemies.find(e => e.id === fd.tid && e.hp > 0);
     if (!tgt) {
       let cl = null, cd = Infinity;
       for (const en of g.enemies) {
+        if (en.hp <= 0) continue;
         if (en.stealth) continue;
         if (en.type === 'shahed238') continue;
         const d = dist(fd, en);

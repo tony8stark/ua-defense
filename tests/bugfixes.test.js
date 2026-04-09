@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { setMuted } from '../src/audio/SoundManager.js';
 import { getEnemyRenderAngle } from '../src/data/enemies.js';
 import { getRepairCost } from '../src/data/units.js';
+import { updateCombat } from '../src/game/combat.js';
 import { createTouchPressState, finishTouchPress } from '../src/game/touch.js';
 
 test('getRepairCost applies repair discount consistently', () => {
@@ -103,4 +105,46 @@ test('results screen keeps the roster panel from shrinking away on short viewpor
   assert.match(source, /Особовий склад/, 'results screen should still render the roster section');
   assert.match(source, /maxHeight:\s*'35dvh'/, 'roster section should stay capped instead of growing forever');
   assert.match(source, /flexShrink:\s*0/, 'results screen cards should opt out of flex shrinking on short viewports');
+});
+
+test('combat only counts one kill when multiple shots land on the same target in one tick', () => {
+  setMuted(true);
+  const g = {
+    mode: {},
+    wave: 3,
+    tick: 0,
+    weather: { effects: {} },
+    ewActive: null,
+    trivogaActive: 0,
+    city: { width: 800, height: 600 },
+    buildings: [],
+    towers: [],
+    kukurzniki: [],
+    enemies: [
+      { id: 1, type: 'shahed', hp: 5, maxHp: 5, reward: 3, x: 120, y: 80, color: '#fff' },
+    ],
+    projectiles: [
+      { id: 11, tid: 1, x: 120, y: 80, tx: 120, ty: 80, speed: 10, damage: 5, hitChance: 1 },
+      { id: 12, tid: 1, x: 120, y: 80, tx: 120, ty: 80, speed: 10, damage: 5, hitChance: 1 },
+    ],
+    friendlyDrones: [],
+    explosions: [],
+    particles: [],
+    floats: [],
+    logs: [],
+    money: 0,
+    score: 0,
+    killed: 0,
+    killedByType: { shahed: 0 },
+    comboCount: 0,
+    comboTimer: 0,
+    bestCombo: 0,
+  };
+
+  updateCombat(g);
+
+  assert.equal(g.killed, 1, 'duplicate hits on a dead target should not award multiple kills');
+  assert.equal(g.money, 3, 'reward should only be granted once');
+  assert.equal(g.score, 3, 'score should only be granted once');
+  assert.equal(g.killedByType.shahed, 1, 'type breakdown should stay aligned with real kills');
 });
