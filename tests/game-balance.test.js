@@ -177,6 +177,33 @@ test('realistic mode now sits close to hell on efficiency and late-wave pressure
   assert.ok(getUnitBalanceScore(MODES.realistic, 'gepard') <= 1.85, `realistic gepard too dominant: ${getUnitBalanceScore(MODES.realistic, 'gepard')}`);
 });
 
+test('realistic opener gives breathing room before full pressure arrives', () => {
+  const waveOne = summarizeWaveThreat(MODES.realistic, 0);
+  const waveTwo = summarizeWaveThreat(MODES.realistic, 1);
+  const waveThree = summarizeWaveThreat(MODES.realistic, 2);
+
+  assert.ok(waveOne.wave.d >= 58, `wave 1 should spawn slower so players can settle in: ${waveOne.wave.d}`);
+  assert.ok(waveTwo.wave.d >= 52, `wave 2 should still leave reaction time: ${waveTwo.wave.d}`);
+  assert.ok(waveThree.wave.d >= 46, `wave 3 should not front-load realistic into hell tempo: ${waveThree.wave.d}`);
+  assert.ok(waveOne.totalDmg <= 190, `wave 1 should not delete a building in one sloppy opener: ${waveOne.totalDmg}`);
+  assert.ok(waveTwo.totalDmg <= 380, `wave 2 should stay below the old shock spike: ${waveTwo.totalDmg}`);
+  assert.ok(waveThree.totalDmg <= 650, `wave 3 should still teach the mode instead of ending the run outright: ${waveThree.totalDmg}`);
+});
+
+test('realistic early enemy softening burns off by wave five instead of nerfing the whole mode', () => {
+  const openingShahed = getEnemySpawnProfile(MODES.realistic, 0, 'shahed', MODES.realistic.shahed);
+  const midIntroShahed = getEnemySpawnProfile(MODES.realistic, 2, 'shahed', MODES.realistic.shahed);
+  const fullShahed = getEnemySpawnProfile(MODES.realistic, 4, 'shahed', MODES.realistic.shahed);
+  const introLancet = getEnemySpawnProfile(MODES.realistic, 2, 'lancet', MODES.realistic.lancet);
+  const fullLancet = getEnemySpawnProfile(MODES.realistic, 4, 'lancet', MODES.realistic.lancet);
+
+  assert.ok(openingShahed.dmg < MODES.realistic.shahed.dmg, `opening shaheds should hit softer than base realistic: ${openingShahed.dmg}`);
+  assert.ok(midIntroShahed.dmg < MODES.realistic.shahed.dmg, `wave 3 shaheds should still be slightly softened: ${midIntroShahed.dmg}`);
+  assert.equal(fullShahed.dmg, MODES.realistic.shahed.dmg);
+  assert.ok(introLancet.dmg < MODES.realistic.lancet.dmg, `first lancets should not arrive at full brutality: ${introLancet.dmg}`);
+  assert.equal(fullLancet.dmg, MODES.realistic.lancet.dmg);
+});
+
 test('flatWave preserves counts while breaking front-loaded shock groups', () => {
   const waveDef = {
     en: [

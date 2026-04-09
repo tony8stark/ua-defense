@@ -25,7 +25,13 @@ export function getRetaliationChance(type, mode = null, waveIndex = 0) {
   if (!base) return 0;
 
   let mul = 1;
-  if (mode?.endless) {
+  if (mode?.retaliationRamp) {
+    const start = clamp(mode.retaliationRamp.start ?? 0.12, 0.05, 1);
+    const cap = clamp(mode.retaliationRamp.max ?? 1, start, 1);
+    const rampWaves = Math.max(1, mode.retaliationRamp.waves ?? 8);
+    const progress = clamp(waveIndex / rampWaves, 0, 1);
+    mul *= start + (cap - start) * progress;
+  } else if (mode?.endless) {
     mul *= clamp(0.18 + waveIndex * 0.05, 0.18, 1);
   }
 

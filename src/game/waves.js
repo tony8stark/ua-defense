@@ -127,9 +127,38 @@ export function getWaveDef(mode, waveIndex, city) {
   return buildKobayashiWave(mode, waveIndex, city);
 }
 
+function rampMultiplier(start, progress) {
+  return start + (1 - start) * progress;
+}
+
+function applyIntroEnemyRamp(mode, waveIndex, type, baseStats) {
+  const introRamp = mode?.introEnemyRamp;
+  const typeRamp = introRamp?.[type];
+  if (!introRamp || !typeRamp) return { ...baseStats };
+
+  const rampWaves = Math.max(1, introRamp.waves ?? 4);
+  const progress = Math.max(0, Math.min(1, waveIndex / rampWaves));
+  const next = { ...baseStats };
+
+  if (typeof baseStats.hp === 'number' && typeof typeRamp.hpMul === 'number') {
+    next.hp = Math.round(baseStats.hp * rampMultiplier(typeRamp.hpMul, progress));
+  }
+  if (typeof baseStats.dmg === 'number' && typeof typeRamp.dmgMul === 'number') {
+    next.dmg = Math.round(baseStats.dmg * rampMultiplier(typeRamp.dmgMul, progress));
+  }
+  if (typeof baseStats.speed === 'number' && typeof typeRamp.speedMul === 'number') {
+    next.speed = Math.round(baseStats.speed * rampMultiplier(typeRamp.speedMul, progress) * 100) / 100;
+  }
+  if (typeof baseStats.reward === 'number' && typeof typeRamp.rewardMul === 'number') {
+    next.reward = Math.max(1, Math.round(baseStats.reward * rampMultiplier(typeRamp.rewardMul, progress)));
+  }
+
+  return next;
+}
+
 export function getEnemySpawnProfile(mode, waveIndex, type, baseStats) {
   if (!baseStats) return null;
-  if (!isEndlessMode(mode)) return { ...baseStats };
+  if (!isEndlessMode(mode)) return applyIntroEnemyRamp(mode, waveIndex, type, baseStats);
 
   const stage = waveIndex + 1;
   const bias = ENDLESS_TYPE_BIAS[type] || { hp: 1, speed: 1, dmg: 1, reward: 1, dodge: 0.5 };

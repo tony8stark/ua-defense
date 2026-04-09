@@ -268,6 +268,34 @@ test('early kobayashi retaliation and tower damage leave fragile defenses alive 
   assert.ok(towerHit < MODES.kobayashiMaru.crew.maxHp, `early shahed tower strike should leave crew alive: ${towerHit} vs ${MODES.kobayashiMaru.crew.maxHp}`);
 });
 
+test('realistic retaliation ramps in instead of opening at full tower-hunting aggression', () => {
+  const openingShahed = getRetaliationChance('shahed', MODES.realistic, 0);
+  const waveThreeShahed = getRetaliationChance('shahed', MODES.realistic, 2);
+  const waveSixShahed = getRetaliationChance('shahed', MODES.realistic, 5);
+  const lateShahed = getRetaliationChance('shahed', MODES.realistic, 8);
+  const earlyLancet = getRetaliationChance('lancet', MODES.realistic, 2);
+
+  assert.ok(openingShahed <= 0.1, `realistic should not start with full retaliation pressure: ${openingShahed}`);
+  assert.ok(waveThreeShahed <= 0.25, `wave 3 retaliation should still be budget-manageable: ${waveThreeShahed}`);
+  assert.ok(earlyLancet <= 0.24, `opening lancets should not instantly full-commit to tower deletion: ${earlyLancet}`);
+  assert.ok(waveSixShahed < lateShahed, `retaliation should ramp over time: ${waveSixShahed} vs ${lateShahed}`);
+  assert.ok(lateShahed >= 0.65, `late realistic should still regain sharp retaliation pressure: ${lateShahed}`);
+});
+
+test('realistic spawn targeting ramps tower pressure instead of opening with full tower focus', () => {
+  const openingGeran = getTargetDefenseChance(MODES.realistic, 'geran', 0);
+  const openingLancet = getTargetDefenseChance(MODES.realistic, 'lancet', 2);
+  const openingGuided = getTargetDefenseChance(MODES.realistic, 'guided', 3);
+  const lateLancet = getTargetDefenseChance(MODES.realistic, 'lancet', 6);
+  const lateGuided = getTargetDefenseChance(MODES.realistic, 'guided', 6);
+
+  assert.ok(openingGeran <= 0.12, `opening gerans should mostly stay on buildings: ${openingGeran}`);
+  assert.ok(openingLancet <= 0.22, `first lancets should not open with near-half tower focus: ${openingLancet}`);
+  assert.ok(openingGuided <= 0.6, `first guided drone should not almost hard-lock towers immediately: ${openingGuided}`);
+  assert.ok(lateLancet >= 0.35, `later lancets should regain tower pressure: ${lateLancet}`);
+  assert.ok(lateGuided >= 0.85, `later guided drones should return to their late-game threat: ${lateGuided}`);
+});
+
 test('kobayashi spawn targeting ramps from ten percent opener pressure to capped late-wave tower focus', () => {
   assert.equal(getTargetDefenseChance(MODES.kobayashiMaru, 'shahed', 0), 0.1);
   assert.equal(getTargetDefenseChance(MODES.kobayashiMaru, 'guided', 0), 0.1);

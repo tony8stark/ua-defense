@@ -90,7 +90,7 @@ export function getTargetDefenseChance(mode, enemyType, waveIndex = 0) {
   const base = mode?.[enemyType]?.targetDef || 0;
   if (!base) return 0;
 
-  if (!mode?.endless || !mode?.targetDefRamp) return base;
+  if (!mode?.targetDefRamp) return base;
 
   const start = Math.max(0, Math.min(1, mode.targetDefRamp.start ?? 0.1));
   const cap = Math.max(start, Math.min(base, mode.targetDefRamp.max ?? base));
