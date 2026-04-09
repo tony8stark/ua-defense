@@ -23,7 +23,7 @@ import {
 import { getWaveUpkeepCost } from '../src/game/economy.js';
 import { recordTurretShot } from '../src/game/overheat.js';
 import { canPlaceTowerAt } from '../src/game/placement.js';
-import { spawnEnemy } from '../src/game/spawner.js';
+import { getTargetDefenseChance, spawnEnemy } from '../src/game/spawner.js';
 import { addLog, createGameState, updateBattleCallout } from '../src/game/state.js';
 
 function createRoll(...values) {
@@ -264,4 +264,12 @@ test('early kobayashi retaliation and tower damage leave fragile defenses alive 
   assert.ok(earlyRetaliation < 0.5, `opening retaliation should not instantly focus-fire every defense: ${earlyRetaliation}`);
   assert.ok(towerHit < MODES.kobayashiMaru.mvg.maxHp, `early shahed tower strike should leave MVG alive: ${towerHit} vs ${MODES.kobayashiMaru.mvg.maxHp}`);
   assert.ok(towerHit < MODES.kobayashiMaru.crew.maxHp, `early shahed tower strike should leave crew alive: ${towerHit} vs ${MODES.kobayashiMaru.crew.maxHp}`);
+});
+
+test('kobayashi spawn targeting ramps from ten percent opener pressure to capped late-wave tower focus', () => {
+  assert.equal(getTargetDefenseChance(MODES.kobayashiMaru, 'shahed', 0), 0.1);
+  assert.equal(getTargetDefenseChance(MODES.kobayashiMaru, 'guided', 0), 0.1);
+  assert.equal(getTargetDefenseChance(MODES.kobayashiMaru, 'guided', 18), 0.7);
+  assert.equal(getTargetDefenseChance(MODES.kobayashiMaru, 'lancet', 18), 0.7);
+  assert.equal(getTargetDefenseChance(MODES.realistic, 'shahed', 8), MODES.realistic.shahed.targetDef);
 });

@@ -86,8 +86,22 @@ export function flatWave(waveDef) {
 }
 
 // Pick a target for an enemy
+export function getTargetDefenseChance(mode, enemyType, waveIndex = 0) {
+  const base = mode?.[enemyType]?.targetDef || 0;
+  if (!base) return 0;
+
+  if (!mode?.endless || !mode?.targetDefRamp) return base;
+
+  const start = Math.max(0, Math.min(1, mode.targetDefRamp.start ?? 0.1));
+  const cap = Math.max(start, Math.min(base, mode.targetDefRamp.max ?? base));
+  const rampWaves = Math.max(1, mode.targetDefRamp.waves ?? mode.endlessConfig?.referenceWaves ?? 18);
+  const progress = Math.max(0, Math.min(1, waveIndex / rampWaves));
+
+  return Math.round((start + (cap - start) * progress) * 100) / 100;
+}
+
 function pickTarget(g, enemyType) {
-  const tdc = g.mode[enemyType].targetDef;
+  const tdc = getTargetDefenseChance(g.mode, enemyType, g.wave);
   if (chance(tdc)) {
     // Guided drones: 60% chance to target a Decoy first (if any alive)
     if (enemyType === 'guided') {
