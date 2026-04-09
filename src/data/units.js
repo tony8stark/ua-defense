@@ -69,6 +69,8 @@ export function getSellPrice(tower) {
 }
 
 export const REPAIR_COST_PER_HP = 1.5; // 1.5 coins per HP (expensive, Hospital discount can halve)
+export const BUILDING_REBUILD_HP_PCT = 0.4;
+export const BUILDING_REBUILD_COST_PCT = 0.6;
 
 export function getRepairCost(building, bonuses = {}) {
   const repairAmount = Math.max(0, (building.maxHp || 0) - (building.hp || 0));
@@ -93,6 +95,32 @@ export function getRepairActionState(item, options = {}) {
     damaged: hp > 0 && amount > 0,
     amount,
     cost,
+    allowed: reason === null,
+    reason,
+  };
+}
+
+export function getRebuildCost(building) {
+  const maxHp = Math.max(0, building?.maxHp || 0);
+  return Math.round(maxHp * REPAIR_COST_PER_HP * BUILDING_REBUILD_COST_PCT);
+}
+
+export function getRebuildActionState(item, options = {}) {
+  const hp = item?.hp || 0;
+  const maxHp = Math.max(0, item?.maxHp || 0);
+  const restoreHp = Math.round(maxHp * BUILDING_REBUILD_HP_PCT);
+  const isTower = !!DEF_META[item?.type];
+
+  let reason = null;
+  if (isTower) reason = 'notBuilding';
+  else if (hp > 0) reason = 'notDestroyed';
+  else if (maxHp <= 0) reason = 'invalid';
+  else if (options.waveActive) reason = 'betweenWaves';
+
+  return {
+    rebuildable: !isTower && hp <= 0 && maxHp > 0,
+    restoreHp: reason === 'notDestroyed' || reason === 'invalid' || reason === 'notBuilding' ? 0 : restoreHp,
+    cost: reason === 'notDestroyed' || reason === 'invalid' || reason === 'notBuilding' ? 0 : getRebuildCost(item),
     allowed: reason === null,
     reason,
   };

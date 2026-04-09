@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GRID, getCityConfig } from './data/cities.js';
 import { MODES } from './data/difficulty.js';
-import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, getRepairActionState } from './data/units.js';
+import { DEF_META, getCost, UPGRADES, getUpgradeCost, getSellPrice, getRepairActionState, getRebuildActionState } from './data/units.js';
 import { uid, rnd, dist } from './game/physics.js';
 import { canPlaceTowerAt, getPlacementPreview } from './game/placement.js';
 import {
@@ -305,6 +305,25 @@ export default function App() {
     syncUI();
   }, []);
 
+  const handleRebuild = useCallback((item) => {
+    const g = gRef.current;
+    if (!g) return;
+
+    const building = item.key ? g.buildings.find(bl => bl.key === item.key) : null;
+    if (!building) return;
+
+    const rebuildState = getRebuildActionState(building, { waveActive: g.waveActive });
+    if (!rebuildState.allowed || g.money < rebuildState.cost) return;
+
+    building.hp = rebuildState.restoreHp;
+    g.money -= rebuildState.cost;
+    trackRepairSpend(g, building.key, rebuildState.cost);
+
+    addLog(g, `🧱 ${building.name} аварійно відновлено (-${rebuildState.cost}💰, +${rebuildState.restoreHp} HP)`);
+    setCtxMenu(null);
+    syncUI();
+  }, []);
+
   // Тривога! active ability
   const handleTrivoga = useCallback(() => {
     const g = gRef.current;
@@ -533,6 +552,7 @@ export default function App() {
         onSell={handleSell}
         onUpgrade={handleUpgrade}
         onRepair={handleRepair}
+        onRebuild={handleRebuild}
         onClose={() => setCtxMenu(null)}
       />
     </div>

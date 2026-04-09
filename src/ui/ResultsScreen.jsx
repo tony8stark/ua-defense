@@ -124,6 +124,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         <div style={{
           width: '100%', maxWidth: 480, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+          flexShrink: 0,
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Патчі за виліт
@@ -154,6 +155,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         <div style={{
           width: '100%', maxWidth: 480, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+          flexShrink: 0,
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Логістика
@@ -179,6 +181,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         <div style={{
           width: '100%', maxWidth: 480, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+          flexShrink: 0,
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Ефективність засобів
@@ -211,6 +214,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         <div style={{
           width: '100%', maxWidth: 480, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px',
+          flexShrink: 0,
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Розбивка по типах
@@ -248,7 +252,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
         <div style={{
           width: '100%', maxWidth: 480, marginBottom: 16,
           background: '#0c1222', border: '1px solid #1e293b', borderRadius: 10, padding: '14px 16px',
-          maxHeight: '35dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          maxHeight: '35dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, flexShrink: 0 }}>
             Особовий склад ({totalUnits} розм. · {destroyedUnits} знищ.{soldUnits > 0 ? ` · ${soldUnits} прод.` : ''})
@@ -293,7 +297,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
 
       {/* Submit */}
       {!submitted ? (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: 16, flexShrink: 0 }}>
           <input
             type="text"
             value={name}
@@ -321,11 +325,11 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
           </button>
         </div>
       ) : (
-        <div style={{ marginBottom: 16, fontSize: 14, color: '#4ade80', fontWeight: 600 }}>Результат збережено!</div>
+        <div style={{ marginBottom: 16, fontSize: 14, color: '#4ade80', fontWeight: 600, flexShrink: 0 }}>Результат збережено!</div>
       )}
 
       {/* Buttons */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
         <button onClick={onMenu} style={btnStyle}>↩ Меню</button>
         <button onClick={onLeaderboard} style={{ ...btnStyle, color: '#fbbf24', borderColor: '#fbbf2433' }}>🏆 Рейтинг</button>
       </div>

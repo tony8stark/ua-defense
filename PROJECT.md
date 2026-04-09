@@ -19,7 +19,7 @@ The same pattern is worth reusing in other repos: one stable `PROJECT.md` that e
 - Guided enemies use waypoint-based navigation instead of the old wobbling drift.
 - `Iskander` interception can trigger a short cinematic freeze-frame with a dedicated `Patriot` convergence shot.
 - Battle log funding/upkeep text and battlefield callouts have difficulty-aware sarcastic flavor.
-- Air-defense units can now be repaired directly from the context menu, including during a live wave; buildings still repair only between waves.
+- Air-defense units can now be repaired directly from the context menu, including during a live wave; destroyed buildings can be emergency-rebuilt between waves at partial HP.
 - Fullscreen non-battle screens use their own scroll shell, so tall menus and results pages remain usable on smaller viewports.
 - Enemy art now supports mixed sprite sources: most enemies still use inline SVG, while selected ones such as `shahed` and `lancet` can use PNG assets when available.
 
@@ -44,7 +44,7 @@ The same pattern is worth reusing in other repos: one stable `PROJECT.md` that e
 2. Place and upgrade defenses during downtime.
 3. Start a wave and survive a mixed incoming attack with weather, EW, deep-ingress routes, and occasional special events.
 4. Sell, repair, and react during the wave if defenses start collapsing.
-5. Repair buildings, reposition, upgrade, and spend the next reward window.
+5. Repair buildings, emergency-rebuild destroyed infrastructure, reposition, upgrade, and spend the next reward window.
 6. Repeat until campaign victory, infrastructure collapse, or endless defeat in `kobayashiMaru`.
 
 ## Technical Structure
@@ -65,10 +65,10 @@ The same pattern is worth reusing in other repos: one stable `PROJECT.md` that e
 - [`src/game/enemy-ai.js`](/Users/stark/projects/ua-defense/src/game/enemy-ai.js): rule-based enemy behavior such as deep ingress, retaliation targeting, and guided waypoints.
 - [`src/game/waves.js`](/Users/stark/projects/ua-defense/src/game/waves.js): finite-vs-endless wave contract, Kobayashi Maru generation, endless stat ramping.
 - [`src/game/state.js`](/Users/stark/projects/ua-defense/src/game/state.js): persistent game state, telemetry, roster tracking, economy bookkeeping.
-- [`src/data/units.js`](/Users/stark/projects/ua-defense/src/data/units.js): unit metadata, upgrade trees, sell values, and repair-cost logic.
+- [`src/data/units.js`](/Users/stark/projects/ua-defense/src/data/units.js): unit metadata, upgrade trees, sell values, repair costs, and building rebuild rules.
 - [`src/data/difficulty.js`](/Users/stark/projects/ua-defense/src/data/difficulty.js): mode presets and campaign definitions.
 - [`src/data/battleQuips.js`](/Users/stark/projects/ua-defense/src/data/battleQuips.js): funding/upkeep quips and mode-aware battle callout text.
-- [`src/ui/ContextMenu.jsx`](/Users/stark/projects/ua-defense/src/ui/ContextMenu.jsx): contextual tower/building actions including sell, upgrade, and repair.
+- [`src/ui/ContextMenu.jsx`](/Users/stark/projects/ua-defense/src/ui/ContextMenu.jsx): contextual tower/building actions including sell, upgrade, repair, and emergency rebuilds.
 
 ## Endless Mode Contract
 
@@ -87,7 +87,7 @@ The same pattern is worth reusing in other repos: one stable `PROJECT.md` that e
 - `kobayashiMaru` should escalate mainly through raid density, spawn tempo, mixed composition, and event pressure before relying on raw stat inflation.
 - Early endless aggression toward player air defense is intentionally softer than late-game pressure: retaliation starts low and ramps by wave so the player is not bankrupted on waves 1-3.
 - Tower targeting pressure in endless is wave-ramped and capped instead of using a flat always-hostile probability from the opener.
-- Tower repair is now part of live-wave survival, while building repair remains downtime-only.
+- Tower repair is now part of live-wave survival, while destroyed buildings can only come back through expensive between-wave emergency rebuilds.
 - Upkeep is currently disabled; attrition pressure comes from losses, repairs, targeting pressure, and denser late-wave raids instead of passive between-wave taxation.
 - Reward growth should lag behind threat growth so endless mode trends toward eventual overmatch.
 - `realistic` and `kobayashiMaru` still need live playtest-driven hardening until high kill-rate runs stop feeling routine.

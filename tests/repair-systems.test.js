@@ -60,3 +60,40 @@ test('repair state rejects destroyed or fully healthy units', () => {
     },
   );
 });
+
+test('destroyed buildings expose an interwave emergency rebuild action instead of a dead end', () => {
+  assert.equal(typeof unitData.getRebuildActionState, 'function');
+
+  assert.deepEqual(
+    unitData.getRebuildActionState({ key: 'port', hp: 0, maxHp: 200 }, { waveActive: false }),
+    {
+      rebuildable: true,
+      restoreHp: 80,
+      cost: 180,
+      allowed: true,
+      reason: null,
+    },
+  );
+
+  assert.deepEqual(
+    unitData.getRebuildActionState({ key: 'port', hp: 0, maxHp: 200 }, { waveActive: true }),
+    {
+      rebuildable: true,
+      restoreHp: 80,
+      cost: 180,
+      allowed: false,
+      reason: 'betweenWaves',
+    },
+  );
+
+  assert.deepEqual(
+    unitData.getRebuildActionState({ key: 'port', hp: 40, maxHp: 200 }, { waveActive: false }),
+    {
+      rebuildable: false,
+      restoreHp: 0,
+      cost: 0,
+      allowed: false,
+      reason: 'notDestroyed',
+    },
+  );
+});

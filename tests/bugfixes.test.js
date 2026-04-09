@@ -96,3 +96,11 @@ test('leaderboard uses normalized stat cards and patch labels instead of inline 
   assert.doesNotMatch(uiSource, /`🌊\$\{/, 'leaderboard should not concatenate wave glyphs directly into score strings anymore');
   assert.doesNotMatch(uiSource, /`🏅\$\{/, 'leaderboard should not concatenate score glyphs directly into stat strings anymore');
 });
+
+test('results screen keeps the roster panel from shrinking away on short viewports', () => {
+  const source = readFileSync(resolve('src/ui/ResultsScreen.jsx'), 'utf8');
+
+  assert.match(source, /Особовий склад/, 'results screen should still render the roster section');
+  assert.match(source, /maxHeight:\s*'35dvh'/, 'roster section should stay capped instead of growing forever');
+  assert.match(source, /flexShrink:\s*0/, 'results screen cards should opt out of flex shrinking on short viewports');
+});
