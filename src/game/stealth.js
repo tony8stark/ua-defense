@@ -26,6 +26,9 @@ export function getStealthRevealConfig(type) {
 export function shouldRevealStealthEnemy(g, enemy) {
   if (!enemy?.stealth) return false;
 
+  // Intel buff: reveal all stealth enemies this wave
+  if (g.intelBuffs?.revealStealth) return true;
+
   const weatherMul = getWeatherStealthRevealMultiplier(g.weather);
   const { pointDefenseRadius, targetApproachRadius } = getStealthRevealConfig(enemy.type);
   const effectivePointDefenseRadius = pointDefenseRadius * weatherMul;

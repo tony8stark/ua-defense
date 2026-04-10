@@ -81,6 +81,14 @@ export function createGameState(city, mode) {
     patriotAnim: null,
     // Civilian damage
     civilianHits: 0,
+    // Intel buffs from kills (trофейна розвідка)
+    intelBuffs: {
+      revealStealth: false,        // reveal all stealth enemies this wave
+      dodgePenalty: 0,             // reduce enemy dodge chance next wave
+      dodgePenaltyWaves: 0,        // waves remaining for dodge penalty
+      patriotBonus: 0,             // bonus Patriot intercept chance
+      patriotBonusCharges: 0,      // Iskander strikes remaining for bonus
+    },
     // Balance telemetry / economy tracking
     economy: {
       totalSpent: 0,

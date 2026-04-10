@@ -335,6 +335,7 @@ const WEATHER_TYPES = {
   night: { id: 'night', label: '🌙 Ніч', effects: { turretAccMul: 0.8, visibility: 0.6 } },
   wind: { id: 'wind', label: '💨 Вітер', effects: { accuracyMul: 0.85, drift: true } },
   storm: { id: 'storm', label: '⛈️ Шквал', effects: { rangeMul: 0.82, turretAccMul: 0.72, accuracyMul: 0.8, fpvAccMul: 0.76, airfieldAccMul: 0.74, drift: true, visibility: 0.55, droneSpeedMul: 0.8, droneMissChance: 0.2 } },
+  frost: { id: 'frost', label: '🥶 Мороз', effects: { droneSpeedMul: 0.82, turretAccMul: 0.95, fpvAccMul: 0.92 } },
 };
 
 const WEATHER_SENSITIVE_DRONES = new Set(['shahed', 'geran', 'shahed238', 'lancet', 'guided', 'orlan']);
@@ -444,6 +445,20 @@ export function getWeatherVisualProfile(weather) {
         groundMistAlpha: 0,
         lightningAlpha: 0,
       };
+    case 'frost':
+      return {
+        fogLayers: 1,
+        fogAlpha: 0.06,
+        edgeVignetteAlpha: 0.08,
+        cloudVeilAlpha: 0.06,
+        rainLayers: 0,
+        rainOpacity: 0,
+        rainSlant: 0,
+        rainSpeed: 0,
+        groundMistAlpha: 0.04,
+        lightningAlpha: 0,
+        frostTint: true,
+      };
     default:
       return {
         fogLayers: 0,
@@ -471,6 +486,7 @@ export function getWeatherPool(mode = {}, waveIndex = 0) {
     WEATHER_TYPES.rain,
     WEATHER_TYPES.night,
     WEATHER_TYPES.wind,
+    WEATHER_TYPES.frost,
   ];
 
   if (!lateWave && !mode.endless && !harshMode) pool.unshift(WEATHER_TYPES.clear);
@@ -557,6 +573,39 @@ export function drawWeatherOverlay(ctx, g) {
       glow.addColorStop(1, 'rgba(251,191,36,0)');
       ctx.fillStyle = glow;
       ctx.fillRect(b.x - 50, b.y - 50, 100, 100);
+    }
+  } else if (w.id === 'frost') {
+    // Light blue tint
+    ctx.fillStyle = 'rgba(186,230,253,0.08)';
+    ctx.fillRect(0, 0, g.city.width, g.city.height);
+    // Ice crystal particles
+    ctx.globalAlpha = 0.15;
+    for (let i = 0; i < 40; i++) {
+      const cx = (i * 97 + g.tick * 0.3) % g.city.width;
+      const cy = (i * 61 + g.tick * 0.15 + Math.sin(i * 1.7) * 20) % g.city.height;
+      ctx.fillStyle = '#bfdbfe';
+      ctx.font = `${6 + (i % 3) * 2}px serif`;
+      ctx.fillText('*', cx, cy);
+    }
+    ctx.globalAlpha = 1;
+    // Subtle edge vignette
+    const frostVig = ctx.createRadialGradient(
+      g.city.width / 2, g.city.height / 2, g.city.width * 0.3,
+      g.city.width / 2, g.city.height / 2, g.city.width * 0.7,
+    );
+    frostVig.addColorStop(0, 'rgba(186,230,253,0)');
+    frostVig.addColorStop(1, 'rgba(186,230,253,0.08)');
+    ctx.fillStyle = frostVig;
+    ctx.fillRect(0, 0, g.city.width, g.city.height);
+    // Breath mist near towers
+    for (const tw of g.towers) {
+      if (tw.hp <= 0) continue;
+      const breathPhase = Math.sin(g.tick * 0.06 + tw.id * 5) * 0.5 + 0.5;
+      const mist = ctx.createRadialGradient(tw.x, tw.y - 8, 2, tw.x, tw.y - 12, 14);
+      mist.addColorStop(0, `rgba(220,235,250,${0.12 * breathPhase})`);
+      mist.addColorStop(1, 'rgba(220,235,250,0)');
+      ctx.fillStyle = mist;
+      ctx.fillRect(tw.x - 14, tw.y - 26, 28, 28);
     }
   } else if (w.id === 'wind' || w.id === 'storm') {
     if (w.id === 'storm') {

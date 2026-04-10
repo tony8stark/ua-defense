@@ -69,7 +69,7 @@ export function updateCombat(g) {
     if (tw.type === 'turret' || tw.type === 'mvg' || tw.type === 'hawk') {
       if (g.tick % 3 === 0) playShoot();
       // MVG gets +15% accuracy vs fast targets (Lancet, Shahed-238) — its niche
-      const mvgFastBonus = (tw.type === 'mvg' && closest.speed > SLOW_SPEED_THRESHOLD) ? 0.15 : 0;
+      const mvgFastBonus = (tw.type === 'mvg' && closest.speed > SLOW_SPEED_THRESHOLD) ? 0.22 : 0;
       // Тривога bonuses: MVG +20% acc, HAWK 100% hit
       const trivogaAcc = trivogaOn ? (tw.type === 'mvg' ? 0.20 : tw.type === 'hawk' ? 1.0 : 0) : 0;
       const weatherAccMul = getWeatherAccuracyMultiplier(weather, tw.type);
@@ -191,7 +191,8 @@ export function updateCombat(g) {
     if (d < p.speed * TICK * 2) {
       p.hit = true;
       // Guided drones can dodge (IRIS-T and F-16 missiles bypass)
-      const dodged = tgt.dodgeChance && chance(tgt.dodgeChance) && !p.isF16Missile && !p.isIRIST;
+      const effectiveDodge = Math.max(0, (tgt.dodgeChance || 0) - (g.intelBuffs?.dodgePenalty || 0));
+      const dodged = effectiveDodge > 0 && chance(effectiveDodge) && !p.isF16Missile && !p.isIRIST;
       // High-altitude targets: -40% accuracy for projectiles (IRIS-T unaffected)
       const altPenalty = (tgt.altitude === 'high' && !p.isIRIST && !p.isHawkMissile) ? 0.60 : 1.0;
       // Weather accuracy already applied at projectile creation — no second multiplier
@@ -211,6 +212,8 @@ export function updateCombat(g) {
           // Random kill quip
           const quip = getKillQuip(tgt.type);
           if (quip) addLog(g, quip);
+          // Intel from kills
+          rollIntelFromKill(g, tgt.type, tgt.x, tgt.y);
           g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });
           for (let i = 0; i < 6; i++) {
             g.particles.push({ x: tgt.x, y: tgt.y, vx: rnd(-3, 3), vy: rnd(-3, 3), life: rnd(15, 30), color: tgt.color });
@@ -263,10 +266,11 @@ export function updateCombat(g) {
 
     if (dist(fd, tgt) < 14) {
       fd.dead = true;
-      const dodged = tgt.dodgeChance && chance(tgt.dodgeChance);
+      // 7% crit chance: direct hit to critical systems, instant kill (bypasses dodge)
+      const isCrit = chance(0.07);
+      const fpvEffectiveDodge = Math.max(0, (tgt.dodgeChance || 0) - (g.intelBuffs?.dodgePenalty || 0));
+      const dodged = !isCrit && fpvEffectiveDodge > 0 && chance(fpvEffectiveDodge);
       if (!dodged && chance(fd.hitChance || 0.5)) {
-        // 7% crit chance: direct hit to critical systems, instant kill
-        const isCrit = chance(0.07);
         const dmg = isCrit ? tgt.hp + 1 : fd.damage;
         tgt.hp -= dmg;
         if (isCrit) addFloat(g, fd.x, fd.y - 14, 'КРИТ!', '#fbbf24');
@@ -281,6 +285,8 @@ export function updateCombat(g) {
           if (fd.sourceTowerId) recordUnitKill(g, fd.sourceTowerId);
           const quip = getKillQuip(tgt.type);
           if (quip) addLog(g, quip);
+          // Intel from kills
+          rollIntelFromKill(g, tgt.type, tgt.x, tgt.y);
           g.explosions.push({ x: tgt.x, y: tgt.y, r: 22, life: 24, ml: 24 });
         }
       } else {
@@ -292,12 +298,17 @@ export function updateCombat(g) {
 }
 
 // Helper: find up to N enemies in range (for Тривога turret multi-target)
+// Must apply the same filters as the main targeting loop (lines 42-50)
 function findMultiTargets(g, tw, range, max) {
   const targets = [];
   for (const en of g.enemies) {
     if (en.stealth) continue;
-    if (dist(tw, en) < range) {
-      targets.push({ en, d: dist(tw, en) });
+    if (isEnemyInCruiseIngress(en) && tw.type !== 'hawk' && tw.type !== 'irist') continue;
+    if (en.altitude === 'high' && tw.type === 'crew') continue;
+    if (tw.type === 'crew' && en.type === 'shahed238') continue;
+    const d = dist(tw, en);
+    if (d < range) {
+      targets.push({ en, d });
     }
   }
   targets.sort((a, b) => a.d - b.d);
@@ -306,6 +317,34 @@ function findMultiTargets(g, tw, range, max) {
 
 function addFloat(g, x, y, text, color) {
   g.floats.push({ x, y, text, color, life: 45, ml: 45 });
+}
+
+// Intel from kills: chance to gain tactical buff when killing specific enemies
+function rollIntelFromKill(g, enemyType, x, y) {
+  const intel = g.intelBuffs;
+  if (!intel) return;
+
+  if (enemyType === 'orlan' && chance(0.30)) {
+    intel.revealStealth = true;
+    addFloat(g, x, y - 24, '📋 РОЗВІДКУ ПЕРЕХОПЛЕНО', '#34d399');
+    addLog(g, '📋 Перехоплені координати! Стелс-цілі розкриті!', {
+      broadcast: { text: 'РОЗВІДКУ ПЕРЕХОПЛЕНО', life: 56, priority: 2, color: '#dcfce7', accent: '#34d399' },
+    });
+  } else if (enemyType === 'guided' && chance(0.12)) {
+    intel.dodgePenalty = 0.08;
+    intel.dodgePenaltyWaves = 1;
+    addFloat(g, x, y - 24, '📋 КОДИ НАВЕДЕННЯ', '#34d399');
+    addLog(g, '📋 Зламані коди наведення! Ворог -8% ухилення.', {
+      broadcast: { text: 'КОДИ НАВЕДЕННЯ ЗЛАМАНО', life: 52, priority: 2, color: '#dcfce7', accent: '#34d399' },
+    });
+  } else if (enemyType === 'kalibr' && chance(0.10)) {
+    intel.patriotBonus = 0.12;
+    intel.patriotBonusCharges = 2;
+    addFloat(g, x, y - 24, '📋 ПОЗИЦІЮ ВИЯВЛЕНО', '#34d399');
+    addLog(g, '📋 Засічена стартова позиція! Patriot +12%.', {
+      broadcast: { text: 'СТАРТОВУ ПОЗИЦІЮ ЗАСІЧЕНО', life: 52, priority: 2, color: '#dcfce7', accent: '#34d399' },
+    });
+  }
 }
 
 function markEnemyUnderFire(g, enemyId, towerId) {

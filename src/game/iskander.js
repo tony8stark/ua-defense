@@ -61,7 +61,10 @@ export function updateIskander(g) {
       // Roll for Patriot intercept
       const patriotChance = m.iskander.patriotChance || 0;
       const cityBonus = g.city.bonuses?.patriotBonus || 0;
-      if (g.patriotInterceptions < g.patriotMax && chance(patriotChance + cityBonus)) {
+      const intelBonus = g.intelBuffs?.patriotBonusCharges > 0 ? (g.intelBuffs.patriotBonus || 0) : 0;
+      if (g.patriotInterceptions < g.patriotMax && chance(patriotChance + cityBonus + intelBonus)) {
+        // Consume intel charge if used
+        if (intelBonus > 0 && g.intelBuffs) g.intelBuffs.patriotBonusCharges--;
         intercept(g, m);
       } else {
         impact(g, m);

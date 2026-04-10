@@ -135,6 +135,17 @@ export function update(g) {
     if (g.f16Cooldown > 0) g.f16Cooldown--;
     if (g.ewCooldown > 0) g.ewCooldown--;
     g.trivogaCooldown = 0; // Reset Тривога cooldown between waves
+    // Decay intel buffs between waves
+    if (g.intelBuffs) {
+      g.intelBuffs.revealStealth = false; // stealth reveal lasts only this wave
+      if (g.intelBuffs.dodgePenaltyWaves > 0) {
+        g.intelBuffs.dodgePenaltyWaves--;
+        if (g.intelBuffs.dodgePenaltyWaves <= 0) {
+          g.intelBuffs.dodgePenalty = 0;
+        }
+      }
+      // patriotBonus decays by charges (handled in iskander.js), not by waves
+    }
     addLog(g, getWaveCompleteQuip(), {
       broadcast: { text: getBattleCalloutText('waveComplete', g.mode), life: 56, priority: 1, color: '#dcfce7', accent: '#22c55e' },
     });
