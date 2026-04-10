@@ -11,13 +11,13 @@ const DEEP_INGRESS_BASE = {
 };
 
 export const ENEMY_RETALIATION_CHANCE = {
-  shahed: 0.72,
-  geran: 0.78,
-  shahed238: 0.62,
-  lancet: 0.66,
-  guided: 0.85,
-  kh101: 0.58,
-  kalibr: 0.6,
+  shahed: 0.35,
+  geran: 0.40,
+  shahed238: 0.30,
+  lancet: 0.33,
+  guided: 0.50,
+  kh101: 0.28,
+  kalibr: 0.30,
 };
 
 export function getRetaliationChance(type, mode = null, waveIndex = 0) {
