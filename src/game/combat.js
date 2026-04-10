@@ -8,6 +8,8 @@ import { coolTurretOverheat, recordTurretShot } from './overheat.js';
 import { playShoot, playFPVLaunch, playExplosion } from '../audio/SoundManager.js';
 import { getKillQuip } from '../data/battleQuips.js';
 
+const CRUISE_MISSILE_TYPES = new Set(['kalibr', 'kh101']);
+
 export function updateCombat(g) {
   const m = g.mode;
   const ew = getEWMultipliers(g);
@@ -44,8 +46,8 @@ export function updateCombat(g) {
       if (isEnemyInCruiseIngress(en) && tw.type !== 'hawk' && tw.type !== 'irist') continue;
       // High-altitude Shaheds: crew (FPV) and kukurzniki can't reach them
       if (en.altitude === 'high' && (tw.type === 'crew')) continue;
-      // Crew skips Shahed-238
-      if (tw.type === 'crew' && en.type === 'shahed238') continue;
+      // Crew skips Shahed-238 and cruise missiles (FPV can't intercept rockets)
+      if (tw.type === 'crew' && (en.type === 'shahed238' || en.type === 'kalibr' || en.type === 'kh101')) continue;
       // HAWK only targets slow enemies (Shahed, Geran, Kalibr, Orlan, Kh-101)
       if (tw.type === 'hawk' && en.speed > SLOW_SPEED_THRESHOLD && en.type !== 'kalibr' && en.type !== 'kh101') continue;
       // IRIS-T targets highest HP enemy in range (not nearest)
@@ -73,8 +75,10 @@ export function updateCombat(g) {
       // Тривога bonuses: MVG +20% acc, HAWK 100% hit
       const trivogaAcc = trivogaOn ? (tw.type === 'mvg' ? 0.20 : tw.type === 'hawk' ? 1.0 : 0) : 0;
       const weatherAccMul = getWeatherAccuracyMultiplier(weather, tw.type);
+      // Turret/MVG: -70% accuracy vs cruise missiles (ZU-23 can technically shoot, but it's a lucky shot)
+      const missilePenalty = (tw.type === 'turret' || tw.type === 'mvg') && CRUISE_MISSILE_TYPES.has(closest.type) ? 0.30 : 1.0;
       const baseHit = tw.type === 'hawk' && trivogaOn ? 1.0
-        : (tw.hitChance + accBonus + mvgFastBonus + trivogaAcc) * weatherAccMul;
+        : (tw.hitChance + accBonus + mvgFastBonus + trivogaAcc) * weatherAccMul * missilePenalty;
       // Тривога: turret fires at up to 3 targets simultaneously
       const targets = (tw.type === 'turret' && trivogaOn) ? findMultiTargets(g, tw, effectiveRange, 3) : [closest];
       for (const tgt of targets) {
@@ -97,13 +101,15 @@ export function updateCombat(g) {
       playShoot();
       // Тривога: Gepard fires 3 projectiles instead of 2
       const burstCount = trivogaOn ? 3 : 2;
+      // Gepard CIWS role: +15% accuracy vs cruise missiles (designed for close-range interception)
+      const gepardMissileBonus = CRUISE_MISSILE_TYPES.has(closest.type) ? 0.15 : 0;
       markEnemyUnderFire(g, closest.id, tw.id);
       for (let i = 0; i < burstCount; i++) {
         g.projectiles.push({
           x: tw.x + rnd(-3, 3), y: tw.y + rnd(-3, 3),
           tid: closest.id, tx: closest.x + rnd(-5, 5), ty: closest.y + rnd(-5, 5),
           damage: Math.round(tw.damage * dmgMul), speed: 9, color: DEF_META.gepard.color,
-          id: uid(), hitChance: (tw.hitChance + accBonus) * getWeatherAccuracyMultiplier(weather, tw.type),
+          id: uid(), hitChance: (tw.hitChance + accBonus + gepardMissileBonus) * getWeatherAccuracyMultiplier(weather, tw.type),
           sourceTowerId: tw.id,
         });
       }
@@ -161,7 +167,7 @@ export function updateCombat(g) {
     const kRange = k.range * getWeatherRangeMultiplier(weather, 'airfield');
     for (const en of g.enemies) {
       if (en.stealth) continue;
-      if (en.type === 'shahed238') continue;
+      if (en.type === 'shahed238' || en.type === 'kalibr' || en.type === 'kh101') continue;
       if (en.altitude === 'high' || isEnemyInCruiseIngress(en)) continue; // Can't reach high-altitude targets
       const d = dist(k, en);
       if (d < kRange && d < closestDist) { closest = en; closestDist = d; }
@@ -250,7 +256,7 @@ export function updateCombat(g) {
       for (const en of g.enemies) {
         if (en.hp <= 0) continue;
         if (en.stealth) continue;
-        if (en.type === 'shahed238') continue;
+        if (en.type === 'shahed238' || en.type === 'kalibr' || en.type === 'kh101') continue;
         const d = dist(fd, en);
         if (d < cd) { cl = en; cd = d; }
       }
@@ -305,7 +311,9 @@ function findMultiTargets(g, tw, range, max) {
     if (en.stealth) continue;
     if (isEnemyInCruiseIngress(en) && tw.type !== 'hawk' && tw.type !== 'irist') continue;
     if (en.altitude === 'high' && tw.type === 'crew') continue;
-    if (tw.type === 'crew' && en.type === 'shahed238') continue;
+    if (tw.type === 'crew' && (en.type === 'shahed238' || en.type === 'kalibr' || en.type === 'kh101')) continue;
+    // Turrets/MVG: cruise missiles are poor targets (low priority, handled by dedicated systems)
+    if ((tw.type === 'turret' || tw.type === 'mvg') && (en.type === 'kalibr' || en.type === 'kh101')) continue;
     const d = dist(tw, en);
     if (d < range) {
       targets.push({ en, d });
