@@ -188,8 +188,30 @@ export function update(g) {
     }
   }
 
+  // High-altitude approach: descend when near target building
+  for (const en of g.enemies) {
+    if (!en.highApproach || en.altitude !== 'high') continue;
+    const to = getTargetPoint(g, en.target);
+    if (!to) continue;
+    if (dist(en, to) < en.descentRadius) {
+      en.altitude = 'diving';
+      en.altTimer = rnd(20, 35); // short dive to attack altitude
+      en.highApproach = false; // transition complete, now normal low-level
+      g.floats.push({ x: en.x, y: en.y - 16, text: '↓ ЗНИЖЕННЯ', color: '#fca5a5', life: 40, ml: 40 });
+    }
+  }
+
   // Update altitude cycling for Shaheds
   for (const en of g.enemies) {
+    if (!en.altCycle && !en.altTimer) continue;
+    // Handle post-descent transition (highApproach dive → low)
+    if (!en.altCycle && en.altTimer > 0) {
+      en.altTimer -= TICK;
+      if (en.altTimer <= 0) {
+        en.altitude = null; // fully descended, now at normal altitude
+      }
+      continue;
+    }
     if (!en.altCycle) continue;
     en.altTimer -= TICK;
     if (en.altTimer <= 0) {

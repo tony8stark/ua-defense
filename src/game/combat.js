@@ -44,8 +44,8 @@ export function updateCombat(g) {
       if (en.stealth) continue;
       // Deep-ingress targets are only reachable by dedicated systems before terminal dive
       if (isEnemyInCruiseIngress(en) && tw.type !== 'hawk' && tw.type !== 'irist') continue;
-      // High-altitude Shaheds: crew (FPV) and kukurzniki can't reach them
-      if (en.altitude === 'high' && (tw.type === 'crew')) continue;
+      // High-altitude enemies: only HAWK and IRIS-T can engage (4000m+ is out of reach for ground AA)
+      if (en.altitude === 'high' && tw.type !== 'hawk' && tw.type !== 'irist') continue;
       // Crew skips Shahed-238 and cruise missiles (FPV can't intercept rockets)
       if (tw.type === 'crew' && (en.type === 'shahed238' || en.type === 'kalibr' || en.type === 'kh101')) continue;
       // HAWK only targets slow enemies (Shahed, Geran, Kalibr, Orlan, Kh-101)
@@ -310,7 +310,7 @@ function findMultiTargets(g, tw, range, max) {
   for (const en of g.enemies) {
     if (en.stealth) continue;
     if (isEnemyInCruiseIngress(en) && tw.type !== 'hawk' && tw.type !== 'irist') continue;
-    if (en.altitude === 'high' && tw.type === 'crew') continue;
+    if (en.altitude === 'high' && tw.type !== 'hawk' && tw.type !== 'irist') continue;
     if (tw.type === 'crew' && (en.type === 'shahed238' || en.type === 'kalibr' || en.type === 'kh101')) continue;
     // Turrets/MVG: cruise missiles are poor targets (low priority, handled by dedicated systems)
     if ((tw.type === 'turret' || tw.type === 'mvg') && (en.type === 'kalibr' || en.type === 'kh101')) continue;

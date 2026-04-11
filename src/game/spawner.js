@@ -138,8 +138,24 @@ export function createEnemyState(g, type, target, pos = null, overrides = {}) {
   const stealthChance = type === 'shahed' ? 0.20 : 0.15;
   const isStealth = !deepIngress && canStealth && chance(stealthChance) && g.wave >= 3;
 
-  // Altitude cycling: some Shaheds climb to 4000-4500m (harder to hit, but less accurate attack)
-  const canAltCycle = (type === 'shahed') && g.wave >= 3 && !isStealth && !deepIngress;
+  // High-altitude approach: drones climb to 4000-5000m, bypass ground AA,
+  // only HAWK/IRIS-T can engage. Descend near target building.
+  const HIGH_APPROACH_TYPES = new Set(['shahed', 'geran', 'shahed238']);
+  const highApproachChance = g.mode?.[type]?.highApproachChance || 0;
+  const canHighApproach = HIGH_APPROACH_TYPES.has(type) && !isStealth && !deepIngress && g.wave >= 2;
+  const isHighApproach = canHighApproach && chance(highApproachChance);
+
+  // High-approach forces building target (mission-locked, no retaliation)
+  let finalTarget = target;
+  if (isHighApproach && target.mode === 'tower') {
+    const alive = g.buildings.filter(b => b.hp > 0);
+    if (alive.length) {
+      finalTarget = { mode: 'building', key: alive[Math.floor(Math.random() * alive.length)].key };
+    }
+  }
+
+  // Legacy altitude cycling (random bobbing for non-high-approach Shaheds)
+  const canAltCycle = (type === 'shahed') && g.wave >= 3 && !isStealth && !deepIngress && !isHighApproach;
   const altCycleChance = 0.20;
   const hasAltCycle = canAltCycle && chance(altCycleChance);
 
@@ -154,7 +170,7 @@ export function createEnemyState(g, type, target, pos = null, overrides = {}) {
     color: ENEMY_COLORS[type],
     sz: ENEMY_SIZES[type],
     type,
-    target,
+    target: finalTarget,
     id: uid(),
     angle: Math.PI,
     dodgeChance: et.dodgeChance || 0,
@@ -162,10 +178,13 @@ export function createEnemyState(g, type, target, pos = null, overrides = {}) {
     deepIngress,
     guidedPath: type === 'guided' ? createGuidedWaypoints(g.city, spawnPos, targetPoint) : null,
     guidedPathTarget: type === 'guided' ? `${target.mode}:${target.id || target.key || ''}` : null,
+    // High-altitude approach: stay high until near target, then descend
+    highApproach: isHighApproach,
+    descentRadius: isHighApproach ? rnd(120, 160) : 0, // px from target to begin descent
     // Altitude cycling state
     altCycle: hasAltCycle,
-    altitude: deepIngress ? 'high' : hasAltCycle ? 'climbing' : null, // null | 'climbing' | 'high' | 'diving' | 'low'
-    altTimer: hasAltCycle ? rnd(40, 80) : 0,   // ticks until next phase change
+    altitude: isHighApproach ? 'high' : deepIngress ? 'high' : hasAltCycle ? 'climbing' : null,
+    altTimer: hasAltCycle ? rnd(40, 80) : 0,
     ...overrides,
   };
 

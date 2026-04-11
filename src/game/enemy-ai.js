@@ -119,6 +119,8 @@ export function createGuidedWaypoints(city, spawn, targetPoint, roll = Math.rand
 export function applyRetaliationTarget(enemy, towerId, roll = Math.random(), mode = null, waveIndex = 0) {
   // Already locked onto a retaliation target: don't change (prevents zigzagging)
   if (enemy.retaliationTargetId) return false;
+  // High-altitude approach enemies are mission-locked on buildings
+  if (enemy.highApproach) return false;
 
   const chance = getRetaliationChance(enemy.type, mode, waveIndex);
   if (!towerId || !chance || roll >= chance) return false;
