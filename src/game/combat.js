@@ -355,9 +355,19 @@ function rollIntelFromKill(g, enemyType, x, y) {
   }
 }
 
-function markEnemyUnderFire(g, enemyId, towerId) {
+function markEnemyUnderFire(g, enemyId, _towerId) {
   const enemy = g.enemies.find(candidate => candidate.id === enemyId && candidate.hp > 0);
-  const tower = g.towers.find(candidate => candidate.id === towerId && candidate.hp > 0);
-  if (!enemy || !tower) return;
-  applyRetaliationTarget(enemy, towerId, Math.random(), g.mode, g.wave);
+  if (!enemy) return;
+
+  // Retaliate toward the NEAREST tower, not the one that shot
+  // (drone under fire targets closest threat, not a sniper across the map)
+  let nearestId = null, nearestDist = Infinity;
+  for (const tw of g.towers) {
+    if (tw.hp <= 0 || tw.type === 'decoy') continue;
+    const d = dist(enemy, tw);
+    if (d < nearestDist) { nearestId = tw.id; nearestDist = d; }
+  }
+  if (!nearestId) return;
+
+  applyRetaliationTarget(enemy, nearestId, Math.random(), g.mode, g.wave);
 }
