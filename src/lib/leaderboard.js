@@ -1,5 +1,5 @@
 import { MODES } from '../data/difficulty.js';
-import { isEndlessMode } from '../game/waves.js';
+import { isEndlessMode, getFiniteWaveCount } from '../game/waves.js';
 
 const KOBAYASHI_SCORE_FACTOR = 1_000_000;
 const KOBAYASHI_SCORE_CAP = KOBAYASHI_SCORE_FACTOR - 1;
@@ -76,41 +76,82 @@ export function getLeaderboardPatches(entry) {
   const stats = getLeaderboardEntryStats(entry);
   const patches = [];
   const endless = isEndlessDifficulty(entry?.difficulty);
+  const diff = entry?.difficulty;
+  const won = !endless && stats.waves >= getFiniteWaveCount(MODES[diff]);
+  const hasStats = !stats.noStats;
 
+  // ── 1. MODE PATCH (always one) ──
   if (endless) {
     pushPatch(patches, { id: 'endless', label: '☠️ Maru Run', tone: '#fb7185' });
-  } else if (entry?.difficulty === 'hell') {
+  } else if (diff === 'hell') {
     pushPatch(patches, { id: 'hell', label: '🔥 Пекельний контур', tone: '#ef4444' });
-  } else if (entry?.difficulty === 'realistic') {
+  } else if (diff === 'realistic') {
     pushPatch(patches, { id: 'realistic', label: '⚔️ Без ілюзій', tone: '#f59e0b' });
-  } else if (entry?.difficulty === 'training') {
+  } else if (diff === 'training') {
     pushPatch(patches, { id: 'training', label: '🎓 Обкатка', tone: '#4ade80' });
   }
 
-  if (stats.killRate >= 90 && stats.totalSpawned >= 18) {
-    pushPatch(patches, { id: 'cleanSky', label: '🎯 Чисте небо', tone: '#4ade80' });
-  } else if (stats.killRate >= 75 && stats.totalSpawned >= 14) {
-    pushPatch(patches, { id: 'steadySky', label: '🛡️ Тримав рубіж', tone: '#38bdf8' });
+  // ── 2. KILL-RATE PATCHES (best one wins) ──
+  if (hasStats) {
+    if (stats.killRate === 100 && stats.totalSpawned >= 25) {
+      pushPatch(patches, { id: 'absolut', label: '💯 Абсолют', tone: '#fbbf24' });
+    } else if (stats.killRate >= 95 && stats.totalSpawned >= 30) {
+      pushPatch(patches, { id: 'sniper', label: '🎯 Снайпер', tone: '#22d3ee' });
+    } else if (stats.killRate >= 90 && stats.totalSpawned >= 18) {
+      pushPatch(patches, { id: 'cleanSky', label: '🎯 Чисте небо', tone: '#4ade80' });
+    } else if (stats.killRate >= 75 && stats.totalSpawned >= 14) {
+      pushPatch(patches, { id: 'steadySky', label: '🛡️ Тримав рубіж', tone: '#38bdf8' });
+    }
   }
 
-  if (entry?.city === 'odesa' && stats.killRate >= 70) {
+  // ── 3. CITY PATCHES ──
+  if (entry?.city === 'odesa' && hasStats && stats.killRate >= 70) {
     pushPatch(patches, { id: 'odesa', label: '⚓ Морський заслін', tone: '#38bdf8' });
   }
   if (entry?.city === 'kyiv' && stats.waves >= 7) {
     pushPatch(patches, { id: 'kyiv', label: '🏙️ Столичний контур', tone: '#60a5fa' });
   }
 
-  if (stats.kills >= 60) {
+  // ── 4. KILL COUNT PATCHES ──
+  if (stats.kills >= 100) {
+    pushPatch(patches, { id: 'century', label: '🫡 Сотня', tone: '#f87171' });
+  } else if (stats.kills >= 60) {
     pushPatch(patches, { id: 'grinder', label: '💀 Мʼясорубка', tone: '#f87171' });
   } else if (stats.kills >= 35) {
     pushPatch(patches, { id: 'hunter', label: '🔻 Вибив хвилю', tone: '#fbbf24' });
   }
 
-  if (stats.waves >= (endless ? 12 : 8)) {
+  // ── 5. SURVIVAL / ENDURANCE PATCHES ──
+  if (endless && stats.waves >= 16) {
+    pushPatch(patches, { id: 'veteran', label: '🪖 Ветеран Мару', tone: '#a78bfa' });
+  } else if (endless && stats.waves >= 12) {
+    pushPatch(patches, { id: 'deepRun', label: '🌊 Дальній рубіж', tone: '#a78bfa' });
+  } else if (diff === 'hell' && stats.waves >= 7) {
+    pushPatch(patches, { id: 'hellMarathon', label: '⚡ Пекельний марафон', tone: '#ef4444' });
+  } else if (diff === 'realistic' && stats.waves >= 10) {
+    pushPatch(patches, { id: 'longBuild', label: '🏗️ Довгобуд', tone: '#60a5fa' });
+  } else if (!endless && stats.waves >= 8) {
     pushPatch(patches, { id: 'deepRun', label: '🌊 Дальній рубіж', tone: '#a78bfa' });
   }
 
-  return patches.slice(0, 3);
+  // ── 6. FUN / FLAVOR PATCHES (situational, add variety) ──
+  if (diff !== 'training' && stats.waves <= 2 && stats.waves > 0) {
+    pushPatch(patches, { id: 'flash', label: '🔥 Спалахнув', tone: '#f97316' });
+  }
+  if (diff === 'training' && won && hasStats && stats.killRate >= 85) {
+    pushPatch(patches, { id: 'walk', label: '☕ Прогулянка', tone: '#86efac' });
+  }
+  if (hasStats && stats.killRate < 40 && stats.killRate > 0 && stats.waves >= 6) {
+    pushPatch(patches, { id: 'chaos', label: '📉 Стояв до кінця', tone: '#94a3b8' });
+  }
+  if (stats.score >= 2000) {
+    pushPatch(patches, { id: 'bomber', label: '💣 Бомбардир', tone: '#fbbf24' });
+  }
+  if (hasStats && stats.kills > 0 && stats.kills <= 5 && stats.waves >= 3) {
+    pushPatch(patches, { id: 'pacifist', label: '🕊️ Пацифіст', tone: '#e2e8f0' });
+  }
+
+  return patches.slice(0, 4);
 }
 
 function getMixedSortScore(entry) {
