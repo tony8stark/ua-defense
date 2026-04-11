@@ -68,7 +68,7 @@ export function getSellPrice(tower) {
   return Math.round((tower.cost || 0) * SELL_REFUND);
 }
 
-export const REPAIR_COST_PER_HP = 1.5; // 1.5 coins per HP (expensive, Hospital discount can halve)
+export const REPAIR_COST_PER_HP = 0.6; // 0.6 coins per HP (repair should be cheaper than buying new)
 export const BUILDING_REBUILD_HP_PCT = 0.4;
 export const BUILDING_REBUILD_COST_PCT = 0.6;
 
