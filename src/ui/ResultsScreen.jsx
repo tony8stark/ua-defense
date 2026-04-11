@@ -16,12 +16,15 @@ const ENEMY_META = {
   kh101: { name: 'Кх-101', emoji: '✈️', color: '#c084fc' },
 };
 
-export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, patriotInterceptions, bestCombo, telemetry, onMenu, onLeaderboard }) {
+export default function ResultsScreen({ phase, killed, score, wave, difficulty, bHp, cityId, roster, totalSpawned, spawnedByType, killedByType, patriotInterceptions, bestCombo, telemetry, completedWaveKills, completedWaveSpawned, onMenu, onLeaderboard }) {
   const m = MODES[difficulty];
   const endless = isEndlessMode(m);
   const waveTotalLabel = getWaveDisplayTotal(m);
   const survived = Object.values(bHp).filter(h => h > 0).length;
-  const killRate = totalSpawned > 0 ? Math.round((killed / totalSpawned) * 100) : 0;
+  // On loss: use completed-wave snapshot for fair kill rate (last wave floods enemies)
+  const fairKills = phase === 'lost' && completedWaveSpawned > 0 ? completedWaveKills : killed;
+  const fairSpawned = phase === 'lost' && completedWaveSpawned > 0 ? completedWaveSpawned : totalSpawned;
+  const killRate = fairSpawned > 0 ? Math.round((fairKills / fairSpawned) * 100) : 0;
   const [name, setName] = useState(() => {
     try {
       return localStorage.getItem('ua-player-name') || '';
@@ -37,8 +40,8 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
     city: cityId,
     score: encodedScore,
     waves_survived: wave,
-    kills: killed,
-    total_spawned: totalSpawned || 0,
+    kills: fairKills,
+    total_spawned: fairSpawned || 0,
   });
 
   const handleSubmit = async () => {
@@ -55,8 +58,8 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
       city: cityId,
       difficulty,
       wavesSurvived: wave,
-      kills: killed,
-      totalSpawned: totalSpawned || 0,
+      kills: fairKills,
+      totalSpawned: fairSpawned || 0,
     });
     setSubmitting(false);
     if (ok) setSubmitted(true);
@@ -106,7 +109,7 @@ export default function ResultsScreen({ phase, killed, score, wave, difficulty, 
       <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
         {[
           { label: 'Рахунок', value: score, color: '#fbbf24' },
-          { label: 'Збито', value: totalSpawned > 0 ? `${killed}/${totalSpawned}` : killed, color: '#ef4444' },
+          { label: 'Збито', value: fairSpawned > 0 ? `${fairKills}/${fairSpawned}` : killed, color: '#ef4444' },
           { label: '% збиття', value: `${killRate}%`, color: killRate >= 80 ? '#4ade80' : killRate >= 50 ? '#f59e0b' : '#ef4444' },
           { label: 'Хвилі', value: `${wave}/${waveTotalLabel}`, color: '#a78bfa' },
           { label: "Об'єкти", value: `${survived}/5`, color: '#4ade80' },

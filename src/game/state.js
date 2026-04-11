@@ -101,6 +101,9 @@ export function createGameState(city, mode) {
       repairByBuilding: {},
     },
     waveLosses: 0,
+    // Snapshot of kill stats at wave start (for fair kill-rate on loss)
+    completedWaveKills: 0,
+    completedWaveSpawned: 0,
   };
 }
 
@@ -134,6 +137,8 @@ export function getUIState(g) {
     trivogaCooldown: g.trivogaCooldown,
     towers: g.towers.filter(t => t.hp > 0).map(t => ({ id: t.id, type: t.type, callsign: t.callsign, kills: t.kills || 0, hp: t.hp, maxHp: t.maxHp })),
     civilianHits: g.civilianHits || 0,
+    completedWaveKills: g.completedWaveKills || 0,
+    completedWaveSpawned: g.completedWaveSpawned || 0,
   };
 }
 

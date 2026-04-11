@@ -456,7 +456,7 @@ export default function App() {
   if (phase === 'won' || phase === 'lost') {
     const roster = gRef.current ? getFinalRoster(gRef.current) : [];
     const telemetry = gRef.current ? getBalanceTelemetry(gRef.current) : null;
-    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} patriotInterceptions={ui.patriotInterceptions} bestCombo={ui.bestCombo} telemetry={telemetry} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
+    return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} patriotInterceptions={ui.patriotInterceptions} bestCombo={ui.bestCombo} telemetry={telemetry} completedWaveKills={ui.completedWaveKills} completedWaveSpawned={ui.completedWaveSpawned} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
   // PLAYING

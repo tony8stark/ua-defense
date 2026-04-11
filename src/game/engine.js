@@ -66,6 +66,10 @@ export function startWave(g) {
   g.waveDelay = waveDef.d;
   g.waveLosses = 0;
 
+  // Snapshot kill stats before this wave starts (for fair kill-rate on loss)
+  g.completedWaveKills = g.killed;
+  g.completedWaveSpawned = g.totalSpawned;
+
   // Apply Orlan recon buff (if any)
   if (g.nextWaveBuff > 1.0) {
     g._waveBuff = g.nextWaveBuff;
