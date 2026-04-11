@@ -135,23 +135,28 @@ export function getLeaderboardPatches(entry) {
   }
 
   // ── 6. FUN / FLAVOR PATCHES (situational, add variety) ──
+  // Collected separately, then one flavor patch gets a guaranteed slot
+  const flavor = [];
   if (diff !== 'training' && stats.waves <= 2 && stats.waves > 0) {
-    pushPatch(patches, { id: 'flash', label: '🔥 Спалахнув', tone: '#f97316' });
+    flavor.push({ id: 'flash', label: '🔥 Спалахнув', tone: '#f97316' });
   }
   if (diff === 'training' && won && hasStats && stats.killRate >= 85) {
-    pushPatch(patches, { id: 'walk', label: '☕ Прогулянка', tone: '#86efac' });
+    flavor.push({ id: 'walk', label: '☕ Прогулянка', tone: '#86efac' });
   }
   if (hasStats && stats.killRate < 40 && stats.killRate > 0 && stats.waves >= 6) {
-    pushPatch(patches, { id: 'chaos', label: '📉 Стояв до кінця', tone: '#94a3b8' });
+    flavor.push({ id: 'chaos', label: '📉 Стояв до кінця', tone: '#94a3b8' });
   }
   if (stats.score >= 2000) {
-    pushPatch(patches, { id: 'bomber', label: '💣 Бомбардир', tone: '#fbbf24' });
+    flavor.push({ id: 'bomber', label: '💣 Бомбардир', tone: '#fbbf24' });
   }
   if (hasStats && stats.kills > 0 && stats.kills <= 5 && stats.waves >= 3) {
-    pushPatch(patches, { id: 'pacifist', label: '🕊️ Пацифіст', tone: '#e2e8f0' });
+    flavor.push({ id: 'pacifist', label: '🕊️ Пацифіст', tone: '#e2e8f0' });
   }
 
-  return patches.slice(0, 4);
+  // Reserve 1 slot for flavor: take top 3 achievement patches + 1 flavor
+  const achievements = patches.slice(0, 3);
+  if (flavor.length > 0) achievements.push(flavor[0]);
+  return achievements;
 }
 
 function getMixedSortScore(entry) {

@@ -375,6 +375,10 @@ export function runSimulation({
       score: g.score,
       money: g.money,
       kills: g.killed,
+      totalSpawned: g.totalSpawned,
+      // Fair kill stats (exclude the wave you lost on)
+      fairKills: ended === 'lost' ? (g.completedWaveKills || g.killed) : g.killed,
+      fairSpawned: ended === 'lost' ? (g.completedWaveSpawned || g.totalSpawned) : g.totalSpawned,
       remainingBuildingHp: totalBuildingHp(g),
       remainingBuildingHpPct: toNumber(totalBuildingHp(g) / totalBuildingMaxHp(g)),
       survivingBuildings: g.buildings.filter(building => building.hp > 0).length,
