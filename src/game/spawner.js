@@ -141,7 +141,10 @@ export function createEnemyState(g, type, target, pos = null, overrides = {}) {
   // High-altitude approach: drones climb to 4000-5000m, bypass ground AA,
   // only HAWK/IRIS-T can engage. Descend near target building.
   const HIGH_APPROACH_TYPES = new Set(['shahed', 'geran', 'shahed238']);
-  const highApproachChance = g.mode?.[type]?.highApproachChance || 0;
+  const baseHighChance = g.mode?.[type]?.highApproachChance || 0;
+  // Ramp high-approach chance: 0 on wave 0-1, scales to full by wave 6
+  const highWaveRamp = Math.min(1, Math.max(0, (g.wave - 1)) / 5);
+  const highApproachChance = baseHighChance * highWaveRamp;
   const canHighApproach = HIGH_APPROACH_TYPES.has(type) && !isStealth && !deepIngress && g.wave >= 2;
   const isHighApproach = canHighApproach && chance(highApproachChance);
 

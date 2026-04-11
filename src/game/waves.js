@@ -19,7 +19,7 @@ function pushGroup(groups, cityId, type, count) {
 
 function getEndlessDoctrine(waveIndex) {
   if (waveIndex < 2) return 'probe';
-  if ((waveIndex + 1) % 7 === 0) return 'overmatch';
+  if ((waveIndex + 1) % 10 === 0) return 'overmatch';
 
   const cycle = ['saturation', 'raid', 'hunt', 'saturation', 'cruise'];
   return cycle[waveIndex % cycle.length];
@@ -32,23 +32,23 @@ function buildKobayashiWave(mode, waveIndex, city) {
 
   switch (doctrine) {
     case 'probe':
-      pushGroup(groups, cityId, 'shahed', 4 + waveIndex * 2);
-      pushGroup(groups, cityId, 'geran', 1 + Math.floor(waveIndex / 2));
-      pushGroup(groups, cityId, 'lancet', Math.max(0, waveIndex - 1));
+      pushGroup(groups, cityId, 'shahed', 3 + Math.floor(waveIndex * 1.4));
+      pushGroup(groups, cityId, 'geran', 1 + Math.floor(waveIndex / 3));
+      pushGroup(groups, cityId, 'lancet', Math.max(0, waveIndex - 2));
       break;
     case 'saturation':
-      pushGroup(groups, cityId, 'shahed', 7 + waveIndex * 2);
-      pushGroup(groups, cityId, 'geran', 3 + Math.floor(waveIndex * 1.1));
-      pushGroup(groups, cityId, 'lancet', 1 + Math.floor(waveIndex / 3));
-      pushGroup(groups, cityId, 'shahed238', Math.max(0, Math.floor((waveIndex - 3) / 4)));
-      pushGroup(groups, cityId, 'guided', Math.max(0, Math.floor((waveIndex - 6) / 5)));
+      pushGroup(groups, cityId, 'shahed', 5 + Math.floor(waveIndex * 1.5));
+      pushGroup(groups, cityId, 'geran', 2 + Math.floor(waveIndex * 0.8));
+      pushGroup(groups, cityId, 'lancet', 1 + Math.floor(waveIndex / 4));
+      pushGroup(groups, cityId, 'shahed238', Math.max(0, Math.floor((waveIndex - 4) / 5)));
+      pushGroup(groups, cityId, 'guided', Math.max(0, Math.floor((waveIndex - 7) / 6)));
       break;
     case 'raid':
-      pushGroup(groups, cityId, 'shahed', 4 + Math.floor(waveIndex * 1.5));
-      pushGroup(groups, cityId, 'geran', 3 + waveIndex);
-      pushGroup(groups, cityId, 'lancet', 2 + Math.floor(waveIndex * 0.6));
-      pushGroup(groups, cityId, 'shahed238', Math.max(0, 1 + Math.floor((waveIndex - 4) / 5)));
-      pushGroup(groups, cityId, 'guided', Math.max(0, Math.floor((waveIndex - 7) / 6)));
+      pushGroup(groups, cityId, 'shahed', 3 + Math.floor(waveIndex * 1.2));
+      pushGroup(groups, cityId, 'geran', 2 + Math.floor(waveIndex * 0.8));
+      pushGroup(groups, cityId, 'lancet', 1 + Math.floor(waveIndex * 0.5));
+      pushGroup(groups, cityId, 'shahed238', Math.max(0, 1 + Math.floor((waveIndex - 5) / 5)));
+      pushGroup(groups, cityId, 'guided', Math.max(0, Math.floor((waveIndex - 8) / 7)));
       break;
     case 'hunt':
       pushGroup(groups, cityId, 'shahed', 3 + Math.floor(waveIndex * 1.2));
@@ -161,12 +161,15 @@ export function getEnemySpawnProfile(mode, waveIndex, type, baseStats) {
   if (!isEndlessMode(mode)) return applyIntroEnemyRamp(mode, waveIndex, type, baseStats);
 
   const stage = waveIndex + 1;
+  const refWaves = mode?.endlessConfig?.referenceWaves ?? ENDLESS_REFERENCE_WAVES;
   const bias = ENDLESS_TYPE_BIAS[type] || { hp: 1, speed: 1, dmg: 1, reward: 1, dodge: 0.5 };
-  const hpMul = 1 + Math.min(2.1, stage * 0.052 * bias.hp);
-  const speedMul = 1 + Math.min(0.65, stage * 0.0135 * bias.speed);
-  const dmgMul = 1 + Math.min(1.1, stage * 0.031 * bias.dmg);
-  const rewardMul = 1 + Math.min(0.45, stage * 0.011 * bias.reward);
-  const dodgeBonus = Math.min(0.22, stage * 0.004 * bias.dodge);
+  // Scale rate adjusts based on referenceWaves (longer ramp = gentler growth)
+  const scaleFactor = 18 / Math.max(12, refWaves); // normalize to original 18-wave reference
+  const hpMul = 1 + Math.min(2.1, stage * 0.042 * scaleFactor * bias.hp);
+  const speedMul = 1 + Math.min(0.65, stage * 0.011 * scaleFactor * bias.speed);
+  const dmgMul = 1 + Math.min(1.1, stage * 0.025 * scaleFactor * bias.dmg);
+  const rewardMul = 1 + Math.min(0.55, stage * 0.014 * scaleFactor * bias.reward);
+  const dodgeBonus = Math.min(0.22, stage * 0.003 * scaleFactor * bias.dodge);
 
   const next = { ...baseStats };
 
