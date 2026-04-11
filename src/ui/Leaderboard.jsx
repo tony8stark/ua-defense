@@ -4,22 +4,23 @@ import { getLeaderboardEntryStats, getLeaderboardPatches, isEndlessDifficulty, s
 import { CITIES } from '../data/cities.js';
 import { MODES } from '../data/difficulty.js';
 
-function getRankTone(index) {
-  if (index === 0) return { glow: '#fbbf24', surface: '#f59e0b', label: '🥇' };
-  if (index === 1) return { glow: '#cbd5e1', surface: '#94a3b8', label: '🥈' };
-  if (index === 2) return { glow: '#d97706', surface: '#f97316', label: '🥉' };
-  return { glow: '#475569', surface: '#334155', label: `${index + 1}` };
+function getRankLabel(i) {
+  if (i === 0) return '🥇';
+  if (i === 1) return '🥈';
+  if (i === 2) return '🥉';
+  return `${i + 1}`;
 }
 
-function getDeviceGlyph(device) {
-  if (device === 'mobile') return '📱';
-  if (device === 'tablet') return '📟';
-  return '💻';
+function getRankColor(i) {
+  if (i === 0) return '#fbbf24';
+  if (i === 1) return '#cbd5e1';
+  if (i === 2) return '#f97316';
+  return '#64748b';
 }
 
-function formatValue(value) {
-  if (typeof value === 'number') return value.toLocaleString('uk-UA');
-  return value;
+function fmt(v) {
+  if (typeof v === 'number') return v.toLocaleString('uk-UA');
+  return v;
 }
 
 export default function Leaderboard({ onBack, highlightName, highlightCity, highlightDifficulty }) {
@@ -38,134 +39,85 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
   }, [filterCity, filterDiff]);
 
   return (
-    <div style={shellStyle}>
-      <div style={heroStyle}>
-        <div style={eyebrowStyle}>Польовий реєстр</div>
-        <h1 style={titleStyle}>🏆 Таблиця рекордів</h1>
-        <p style={subtitleStyle}>
-          Єдиний формат для кампанії й Kobayashi Maru: рахунок, хвилі, збиття, відсоток перехоплення і патчі за виліт.
-        </p>
+    <div style={shell}>
+      <div style={header}>
+        <h1 style={title}>🏆 Таблиця рекордів</h1>
+        <div style={filters}>
+          <select value={filterCity} onChange={e => { setLoading(true); setFilterCity(e.target.value); }} style={select}>
+            <option value="">Всі міста</option>
+            {Object.values(CITIES).map(c => (
+              <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
+            ))}
+          </select>
+          <select value={filterDiff} onChange={e => { setLoading(true); setFilterDiff(e.target.value); }} style={select}>
+            <option value="">Всі складності</option>
+            {Object.entries(MODES).map(([k, m]) => (
+              <option key={k} value={k}>{m.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div style={filterBarStyle}>
-        <select value={filterCity} onChange={e => { setLoading(true); setFilterCity(e.target.value); }} style={selectStyle}>
-          <option value="">Всі міста</option>
-          {Object.values(CITIES).map(city => (
-            <option key={city.id} value={city.id}>{city.emoji} {city.name}</option>
-          ))}
-        </select>
-        <select value={filterDiff} onChange={e => { setLoading(true); setFilterDiff(e.target.value); }} style={selectStyle}>
-          <option value="">Всі складності</option>
-          {Object.entries(MODES).map(([modeKey, mode]) => (
-            <option key={modeKey} value={modeKey}>{mode.label}</option>
-          ))}
-        </select>
+      {/* Column headers */}
+      <div style={colHeaders}>
+        <span style={{ ...colH, width: 32, textAlign: 'center' }}>#</span>
+        <span style={{ ...colH, flex: 1, minWidth: 80 }}>Позивний</span>
+        <span style={{ ...colH, width: 110 }}>Місто / Режим</span>
+        <span style={{ ...colH, width: 64, textAlign: 'right' }}>Рахунок</span>
+        <span style={{ ...colH, width: 48, textAlign: 'right' }}>Хвилі</span>
+        <span style={{ ...colH, width: 72, textAlign: 'right' }}>Збиття</span>
+        <span style={{ ...colH, width: 42, textAlign: 'right' }}>%</span>
+        <span style={{ ...colH, width: 120 }}>Патчі</span>
       </div>
 
-      <div style={boardStyle}>
+      <div style={list}>
         {loading ? (
-          <div style={emptyStateStyle}>Завантаження...</div>
+          <div style={empty}>Завантаження...</div>
         ) : entries.length === 0 ? (
-          <div style={emptyStateStyle}>Поки пусто. Будь першим!</div>
+          <div style={empty}>Поки пусто. Будь першим!</div>
         ) : (
-          entries.map((entry, index) => {
+          entries.map((entry, i) => {
             const city = CITIES[entry.city];
             const mode = MODES[entry.difficulty];
             const stats = getLeaderboardEntryStats(entry);
-            const scoreStat = stats.stats[0];
-            const detailStats = stats.stats.slice(1);
             const patches = getLeaderboardPatches(entry);
-            const endless = isEndlessDifficulty(entry.difficulty);
-            const rankTone = getRankTone(index);
-            const accent = mode?.color || '#fbbf24';
-            const isMine = highlightName && entry.name === highlightName && entry.city === highlightCity && entry.difficulty === highlightDifficulty;
+            const isMine = highlightName && entry.name === highlightName
+              && entry.city === highlightCity && entry.difficulty === highlightDifficulty;
 
             return (
-              <div
-                key={entry.id}
-                style={{
-                  ...cardStyle,
-                  borderColor: isMine ? '#4ade80aa' : `${accent}30`,
-                  boxShadow: isMine
-                    ? '0 0 0 1px #4ade8044, 0 20px 50px rgba(8, 15, 30, 0.48)'
-                    : '0 20px 50px rgba(8, 15, 30, 0.42)',
-                }}
-              >
-                <div style={{
-                  ...cardGlowStyle,
-                  background: `linear-gradient(135deg, ${accent}20, transparent 36%, rgba(2, 6, 23, 0.96) 100%)`,
-                }} />
-
-                <div style={cardContentStyle}>
-                  <div style={{
-                    ...rankPlateStyle,
-                    color: rankTone.glow,
-                    borderColor: `${rankTone.glow}44`,
-                    background: `linear-gradient(180deg, ${rankTone.surface}26, rgba(15, 23, 42, 0.82))`,
-                  }}>
-                    {rankTone.label}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={topRowStyle}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{
-                          ...nameStyle,
-                          color: isMine ? '#86efac' : '#f8fafc',
-                        }}>
-                          {entry.name}
-                        </div>
-                        <div style={metaStyle}>
-                          {city?.emoji} {city?.name} · {mode?.label} · {getDeviceGlyph(entry.device)} {entry.device === 'mobile' ? 'мобільний' : entry.device === 'tablet' ? 'планшет' : 'десктоп'}
-                          {endless ? ' · ☠️ пріоритет хвиль' : ''}
-                        </div>
-                      </div>
-
-                      <div style={{
-                        ...scorePanelStyle,
-                        borderColor: `${accent}44`,
-                        background: `linear-gradient(180deg, ${accent}16, rgba(15, 23, 42, 0.9))`,
-                      }}>
-                        <div style={scoreLabelStyle}>{scoreStat.icon} {scoreStat.label}</div>
-                        <div className="font-mono" style={scoreValueStyle}>{formatValue(scoreStat.value)}</div>
-                      </div>
-                    </div>
-
-                    <div style={statsGridStyle}>
-                      {detailStats.map(stat => (
-                        <div key={stat.id} style={statCardStyle}>
-                          <div style={statLabelStyle}>
-                            <span style={{ fontSize: 12 }}>{stat.icon}</span>
-                            <span>{stat.label}</span>
-                          </div>
-                          <div className="font-mono" style={{ ...statValueStyle, color: stat.tone }}>
-                            {formatValue(stat.value)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {patches.length > 0 && (
-                      <div style={patchRowStyle}>
-                        <div style={patchHeadingStyle}>Патчі</div>
-                        {patches.map(patch => (
-                          <div
-                            key={patch.id}
-                            className="font-mono"
-                            style={{
-                              ...patchStyle,
-                              color: patch.tone,
-                              borderColor: `${patch.tone}4a`,
-                              background: `${patch.tone}12`,
-                            }}
-                          >
-                            {patch.label}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div key={entry.id} style={{
+                ...row,
+                background: isMine ? 'rgba(74, 222, 128, 0.08)' : i % 2 === 0 ? 'rgba(15, 23, 42, 0.6)' : 'transparent',
+                borderColor: isMine ? '#4ade8044' : 'transparent',
+              }}>
+                <span style={{ ...cell, width: 32, textAlign: 'center', color: getRankColor(i), fontWeight: 900, fontSize: 14 }}>
+                  {getRankLabel(i)}
+                </span>
+                <span style={{ ...cell, flex: 1, minWidth: 80, fontWeight: 700, color: isMine ? '#86efac' : '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {entry.name}
+                </span>
+                <span style={{ ...cell, width: 110, color: '#94a3b8', fontSize: 11 }}>
+                  {city?.emoji} {city?.name} · <span style={{ color: mode?.color || '#94a3b8' }}>{mode?.label?.replace(/^[^\s]+\s/, '')}</span>
+                </span>
+                <span className="font-mono" style={{ ...cell, width: 64, textAlign: 'right', color: '#fbbf24', fontWeight: 800 }}>
+                  {fmt(stats.score)}
+                </span>
+                <span className="font-mono" style={{ ...cell, width: 48, textAlign: 'right', color: '#a78bfa', fontWeight: 700 }}>
+                  {stats.waves}
+                </span>
+                <span className="font-mono" style={{ ...cell, width: 72, textAlign: 'right', color: '#f87171', fontWeight: 700 }}>
+                  {stats.killLabel}
+                </span>
+                <span className="font-mono" style={{ ...cell, width: 42, textAlign: 'right', color: stats.killRate >= 85 ? '#4ade80' : stats.killRate >= 60 ? '#f59e0b' : '#ef4444', fontWeight: 700 }}>
+                  {stats.killRate}%
+                </span>
+                <span style={{ ...cell, width: 120, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {patches.map(p => (
+                    <span key={p.id} style={{ ...badge, color: p.tone, borderColor: `${p.tone}40`, background: `${p.tone}14` }}>
+                      {p.label}
+                    </span>
+                  ))}
+                </span>
               </div>
             );
           })
@@ -173,253 +125,124 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
       </div>
 
       {onBack && (
-        <button onClick={onBack} style={backButtonStyle}>
-          ← Назад
-        </button>
+        <button onClick={onBack} style={backBtn}>← Назад</button>
       )}
     </div>
   );
 }
 
-const shellStyle = {
+const shell = {
   height: '100dvh',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '24px 16px 36px',
+  padding: '20px 12px 32px',
   overflowY: 'auto',
-  background: [
-    'radial-gradient(circle at top, rgba(251, 191, 36, 0.16), transparent 28%)',
-    'linear-gradient(160deg, #08111f, #0d1f34 38%, #13283c 64%, #09111f)',
-  ].join(', '),
+  background: 'linear-gradient(160deg, #08111f, #0d1f34 38%, #13283c 64%, #09111f)',
 };
 
-const heroStyle = {
+const header = {
   width: '100%',
-  maxWidth: 760,
-  marginBottom: 18,
-  padding: '18px 20px',
-  borderRadius: 18,
-  border: '1px solid rgba(148, 163, 184, 0.18)',
-  background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(8, 15, 30, 0.94))',
-  boxShadow: '0 18px 48px rgba(2, 6, 23, 0.42)',
-};
-
-const eyebrowStyle = {
-  fontSize: 11,
-  fontWeight: 800,
-  textTransform: 'uppercase',
-  letterSpacing: 2,
-  color: '#7dd3fc',
-  marginBottom: 8,
-};
-
-const titleStyle = {
-  fontSize: 28,
-  fontWeight: 900,
-  color: '#f8fafc',
-  marginBottom: 8,
-};
-
-const subtitleStyle = {
-  fontSize: 13,
-  lineHeight: 1.5,
-  color: '#94a3b8',
-  maxWidth: 620,
-};
-
-const filterBarStyle = {
-  display: 'flex',
-  gap: 10,
-  marginBottom: 18,
-  justifyContent: 'center',
-  flexWrap: 'wrap',
-  width: '100%',
-  maxWidth: 760,
-};
-
-const boardStyle = {
-  width: '100%',
-  maxWidth: 760,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 12,
-};
-
-const emptyStateStyle = {
-  color: '#64748b',
-  textAlign: 'center',
-  padding: '48px 24px',
-  fontSize: 14,
-  borderRadius: 16,
-  border: '1px solid rgba(51, 65, 85, 0.8)',
-  background: 'rgba(15, 23, 42, 0.7)',
-};
-
-const cardStyle = {
-  position: 'relative',
-  overflow: 'hidden',
-  borderRadius: 18,
-  border: '1px solid rgba(51, 65, 85, 0.9)',
-  background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(9, 17, 31, 0.98))',
-};
-
-const cardGlowStyle = {
-  position: 'absolute',
-  inset: 0,
-  pointerEvents: 'none',
-};
-
-const cardContentStyle = {
-  position: 'relative',
-  display: 'flex',
-  gap: 14,
-  alignItems: 'stretch',
-  padding: '14px',
-};
-
-const rankPlateStyle = {
-  width: 54,
-  minWidth: 54,
-  borderRadius: 14,
-  border: '1px solid rgba(148, 163, 184, 0.24)',
+  maxWidth: 820,
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 20,
-  fontWeight: 900,
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
-};
-
-const topRowStyle = {
-  display: 'flex',
   justifyContent: 'space-between',
   gap: 12,
-  alignItems: 'flex-start',
+  marginBottom: 12,
   flexWrap: 'wrap',
 };
 
-const nameStyle = {
-  fontSize: 18,
+const title = {
+  fontSize: 22,
   fontWeight: 900,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
+  color: '#f8fafc',
+  margin: 0,
   whiteSpace: 'nowrap',
-  letterSpacing: 0.2,
 };
 
-const metaStyle = {
-  marginTop: 4,
-  fontSize: 11,
-  lineHeight: 1.5,
-  color: '#94a3b8',
-};
-
-const scorePanelStyle = {
-  minWidth: 132,
-  borderRadius: 14,
-  border: '1px solid rgba(148, 163, 184, 0.22)',
-  padding: '10px 12px',
-  textAlign: 'right',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-};
-
-const scoreLabelStyle = {
-  fontSize: 10,
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: 1.3,
-  color: '#94a3b8',
-  marginBottom: 6,
-};
-
-const scoreValueStyle = {
-  fontSize: 24,
-  fontWeight: 900,
-  color: '#fbbf24',
-  lineHeight: 1,
-};
-
-const statsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(116px, 1fr))',
-  gap: 10,
-  marginTop: 12,
-};
-
-const statCardStyle = {
-  borderRadius: 12,
-  border: '1px solid rgba(51, 65, 85, 0.82)',
-  background: 'rgba(15, 23, 42, 0.72)',
-  padding: '10px 12px',
-};
-
-const statLabelStyle = {
-  display: 'flex',
-  gap: 6,
-  alignItems: 'center',
-  fontSize: 10,
-  lineHeight: 1.3,
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: 1.1,
-  color: '#94a3b8',
-  marginBottom: 8,
-};
-
-const statValueStyle = {
-  fontSize: 18,
-  fontWeight: 900,
-  lineHeight: 1.05,
-};
-
-const patchRowStyle = {
+const filters = {
   display: 'flex',
   gap: 8,
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  marginTop: 12,
 };
 
-const patchHeadingStyle = {
-  fontSize: 10,
-  fontWeight: 800,
-  textTransform: 'uppercase',
-  letterSpacing: 1.4,
-  color: '#64748b',
-};
-
-const patchStyle = {
-  borderRadius: 999,
-  border: '1px solid rgba(148, 163, 184, 0.22)',
-  padding: '6px 10px',
-  fontSize: 11,
-  fontWeight: 700,
-  whiteSpace: 'nowrap',
-};
-
-const selectStyle = {
+const select = {
   background: 'rgba(15, 23, 42, 0.9)',
   color: '#e2e8f0',
   border: '1px solid #334155',
-  borderRadius: 10,
-  padding: '10px 14px',
-  fontSize: 14,
+  borderRadius: 8,
+  padding: '6px 10px',
+  fontSize: 13,
   fontFamily: 'inherit',
-  minHeight: 44,
-  boxShadow: '0 12px 32px rgba(2, 6, 23, 0.18)',
+  minHeight: 36,
 };
 
-const backButtonStyle = {
-  marginTop: 24,
-  padding: '12px 28px',
-  borderRadius: 10,
-  fontSize: 14,
-  fontWeight: 800,
+const colHeaders = {
+  width: '100%',
+  maxWidth: 820,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '0 10px 6px',
+  borderBottom: '1px solid #1e293b',
+  marginBottom: 2,
+};
+
+const colH = {
+  fontSize: 10,
+  fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: 1.2,
-  background: 'rgba(15, 23, 42, 0.92)',
+  color: '#475569',
+};
+
+const list = {
+  width: '100%',
+  maxWidth: 820,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 1,
+};
+
+const empty = {
+  color: '#64748b',
+  textAlign: 'center',
+  padding: '40px 24px',
+  fontSize: 14,
+};
+
+const row = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '7px 10px',
+  borderRadius: 8,
+  border: '1px solid transparent',
+  transition: 'background 0.1s',
+};
+
+const cell = {
+  fontSize: 13,
+  lineHeight: 1.3,
+};
+
+const badge = {
+  fontSize: 9,
+  fontWeight: 700,
+  padding: '2px 6px',
+  borderRadius: 999,
+  border: '1px solid',
+  whiteSpace: 'nowrap',
+  lineHeight: 1.4,
+};
+
+const backBtn = {
+  marginTop: 16,
+  padding: '8px 24px',
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 700,
+  background: 'rgba(15, 23, 42, 0.9)',
   color: '#cbd5e1',
   border: '1px solid #334155',
-  minHeight: 44,
+  minHeight: 36,
 };
