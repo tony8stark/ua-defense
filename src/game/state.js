@@ -104,6 +104,8 @@ export function createGameState(city, mode) {
     // Snapshot of kill stats at wave start (for fair kill-rate on loss)
     completedWaveKills: 0,
     completedWaveSpawned: 0,
+    // Tick-based intel delay (replaces setTimeout)
+    _intelDelay: 0,
   };
 }
 

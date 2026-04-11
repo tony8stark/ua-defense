@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchLeaderboard } from '../lib/supabase.js';
-import { getLeaderboardEntryStats, getLeaderboardPatches, isEndlessDifficulty, sortLeaderboardEntries } from '../lib/leaderboard.js';
+import { getLeaderboardEntryStats, getLeaderboardPatches, sortLeaderboardEntries } from '../lib/leaderboard.js';
 import { CITIES } from '../data/cities.js';
 import { MODES } from '../data/difficulty.js';
 

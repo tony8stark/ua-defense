@@ -117,6 +117,26 @@ export function update(g) {
     return null;
   }
 
+  // Deferred intel log (replaces setTimeout for race-safety)
+  if (g._intelDelay > 0) {
+    g._intelDelay--;
+    if (g._intelDelay === 0) {
+      addLog(g, getIntelQuip());
+      const next = getWaveDef(g.mode, g.wave, g.city);
+      if (next) {
+        const isHell = g.mode.iskander.interval[0] < 600;
+        const fuzz = isHell ? 0.4 : 0.2;
+        const parts = next.en
+          .filter(e => !(e.t === 'kalibr' && g.city.id !== 'odesa'))
+          .map(e => {
+            const approx = Math.max(1, Math.round(e.n * (1 + (Math.random() * 2 - 1) * fuzz)));
+            return `${ENEMY_SHORT[e.t] || e.t}:~${approx}`;
+          });
+        addLog(g, `📋 Прогноз: ${parts.join(' ')}`);
+      }
+    }
+  }
+
   // Spawn enemies from queue
   if (g.waveActive && g.spawnQueue.length > 0) {
     g.spawnTimer -= TICK;
@@ -156,24 +176,9 @@ export function update(g) {
     addLog(g, getWaveFundingQuip({ amount: bonus, wave: g.wave, net: bonus - upkeep, mode: g.mode }));
     if (relief > 0) addLog(g, `🛠️ Резерв на відновлення позицій: +${relief}💰`);
     if (upkeep > 0) addLog(g, getUpkeepQuip({ amount: upkeep, wave: g.wave, net: bonus - upkeep, mode: g.mode }));
-    // Intel: show approximate composition of next wave
+    // Intel: schedule fuzzy composition preview for next wave (tick-based, not setTimeout)
     if (hasMoreWaves(g.mode, g.wave)) {
-      setTimeout(() => {
-        addLog(g, getIntelQuip());
-        // Show fuzzy enemy count breakdown
-        const next = getWaveDef(g.mode, g.wave, g.city);
-        if (next) {
-          const isHell = g.mode.iskander.interval[0] < 600;
-          const fuzz = isHell ? 0.4 : 0.2;
-          const parts = next.en
-            .filter(e => !(e.t === 'kalibr' && g.city.id !== 'odesa'))
-            .map(e => {
-              const approx = Math.max(1, Math.round(e.n * (1 + (Math.random() * 2 - 1) * fuzz)));
-              return `${ENEMY_SHORT[e.t] || e.t}:~${approx}`;
-            });
-          addLog(g, `📋 Прогноз: ${parts.join(' ')}`);
-        }
-      }, 1500);
+      g._intelDelay = 90; // ~1.5s at base speed
     }
     playWaveComplete();
     if (!hasMoreWaves(g.mode, g.wave)) return 'won';

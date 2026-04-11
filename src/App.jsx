@@ -46,7 +46,8 @@ export default function App() {
   const [selected, _setSelected] = useState('turret');
   const [spd, _setSpd] = useState(1);
   const [ui, setUI] = useState({ money: 0, score: 0, wave: 0, killed: 0, waveActive: false, bHp: {}, counts: {}, logs: [] });
-  const [ctxMenu, setCtxMenu] = useState(null); // { type: 'tower'|'building', item, screenX, screenY }
+  const [ctxMenu, setCtxMenuState] = useState(null); // { type: 'tower'|'building', item, screenX, screenY }
+  const ctxMenuRef = useRef(null);
   const [showTutorial, setShowTutorial] = useState(false);
 
   const canvasRef = useRef(null);
@@ -58,6 +59,7 @@ export default function App() {
   const spdRef = useRef(1);
   const phaseRef = useRef('menu');
 
+  const setCtxMenu = (v) => { ctxMenuRef.current = v; setCtxMenuState(v); };
   const setSelected = (v) => { selectedRef.current = v; _setSelected(v); };
   const setSpd = (v) => { spdRef.current = v; _setSpd(v); };
   const syncUI = () => { const g = gRef.current; if (g) setUI(getUIState(g)); };
@@ -105,7 +107,7 @@ export default function App() {
     if (!g) return;
 
     // Close context menu if open
-    if (ctxMenu) { setCtxMenu(null); return; }
+    if (ctxMenuRef.current) { setCtxMenu(null); return; }
 
     const city = g.city;
     const m = g.mode;
@@ -159,7 +161,7 @@ export default function App() {
     g.money -= cost;
     playPlace();
     syncUI();
-  }, [ctxMenu]);
+  }, []);
 
   // Right click: context menu
   const handleRightClick = useCallback((e) => {
@@ -459,8 +461,9 @@ export default function App() {
     return <ResultsScreen phase={phase} killed={ui.killed} score={ui.score} wave={ui.wave} difficulty={difficulty} bHp={ui.bHp} cityId={cityId} roster={roster} totalSpawned={ui.totalSpawned} spawnedByType={ui.spawnedByType} killedByType={ui.killedByType} patriotInterceptions={ui.patriotInterceptions} bestCombo={ui.bestCombo} telemetry={telemetry} completedWaveKills={ui.completedWaveKills} completedWaveSpawned={ui.completedWaveSpawned} onMenu={goMenu} onLeaderboard={() => { phaseRef.current = 'leaderboard'; setPhase('leaderboard'); }} />;
   }
 
-  // PLAYING
-  const city = getCityConfig(cityId);
+  // PLAYING — use the city config from game state (not re-read from viewport)
+  // to avoid layout mismatch if the user rotates their device mid-game
+  const city = gRef.current?.city || getCityConfig(cityId);
   const mode = MODES[difficulty];
   const totalWaveLabel = getWaveDisplayTotal(mode);
   const repairDiscount = gRef.current ? getBuildingBonuses(gRef.current).repairDiscount : 0;
@@ -474,7 +477,7 @@ export default function App() {
       {/* HUD */}
       <div style={{ width: '100%', flexShrink: 0 }}>
         <GameHUD
-          money={ui.money} killed={ui.killed} score={ui.score}
+          money={ui.money} killed={ui.killed}
           wave={ui.wave} waveActive={ui.waveActive} totalWaves={totalWaveLabel}
           difficulty={difficulty} buildings={city.buildings} bHp={ui.bHp}
           weather={ui.weather} ewActive={ui.ewActive}

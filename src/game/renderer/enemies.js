@@ -165,6 +165,9 @@ export function drawEnemies(ctx, g) {
       }
     }
 
+    // Safety reset: ensure no shadow state leaks into HP bar or next enemy
+    ctx.shadowBlur = 0;
+
     // HP bar
     const pct = en.hp / en.maxHp;
     ctx.fillStyle = '#000a';

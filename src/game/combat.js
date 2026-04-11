@@ -355,7 +355,7 @@ function rollIntelFromKill(g, enemyType, x, y) {
   }
 }
 
-function markEnemyUnderFire(g, enemyId, _towerId) {
+function markEnemyUnderFire(g, enemyId) {
   const enemy = g.enemies.find(candidate => candidate.id === enemyId && candidate.hp > 0);
   if (!enemy) return;
 

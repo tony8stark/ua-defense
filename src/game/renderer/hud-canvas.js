@@ -346,16 +346,18 @@ export function drawHoverPreview(ctx, hover, selectedType, mode) {
   const mc = DEF_META[selectedType];
   const accent = hover.valid ? mc.color : '#ef4444';
 
-  // Range circle
-  ctx.beginPath();
-  ctx.arc(hover.x, hover.y, def.range, 0, Math.PI * 2);
-  ctx.fillStyle = `${accent}08`;
-  ctx.fill();
-  ctx.strokeStyle = `${accent}35`;
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  // Range circle (skip for types without range, e.g. decoy)
+  if (def && def.range) {
+    ctx.beginPath();
+    ctx.arc(hover.x, hover.y, def.range, 0, Math.PI * 2);
+    ctx.fillStyle = `${accent}08`;
+    ctx.fill();
+    ctx.strokeStyle = `${accent}35`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   ctx.fillStyle = hover.valid ? `${mc.color}12` : 'rgba(239,68,68,0.14)';
   ctx.fillRect(hover.x - 42, hover.y - 42, 84, 84);
