@@ -105,11 +105,11 @@ export default function Leaderboard({ onBack, highlightName, highlightCity, high
                 <span className="font-mono" style={{ ...cell, width: 48, textAlign: 'right', color: '#a78bfa', fontWeight: 700 }}>
                   {stats.waves}
                 </span>
-                <span className="font-mono" style={{ ...cell, width: 72, textAlign: 'right', color: '#f87171', fontWeight: 700 }}>
+                <span className="font-mono" style={{ ...cell, width: 72, textAlign: 'right', color: stats.noStats ? '#475569' : '#f87171', fontWeight: 700 }}>
                   {stats.killLabel}
                 </span>
-                <span className="font-mono" style={{ ...cell, width: 42, textAlign: 'right', color: stats.killRate >= 85 ? '#4ade80' : stats.killRate >= 60 ? '#f59e0b' : '#ef4444', fontWeight: 700 }}>
-                  {stats.killRate}%
+                <span className="font-mono" style={{ ...cell, width: 42, textAlign: 'right', color: stats.noStats ? '#475569' : stats.killRate >= 85 ? '#4ade80' : stats.killRate >= 60 ? '#f59e0b' : '#ef4444', fontWeight: 700 }}>
+                  {stats.noStats ? 'N/A' : `${stats.killRate}%`}
                 </span>
                 <span style={{ ...cell, width: 120, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {patches.map(p => (

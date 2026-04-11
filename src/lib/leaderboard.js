@@ -45,8 +45,10 @@ export function getLeaderboardEntryStats(entry) {
   const waves = Math.max(0, Math.round(entry?.waves_survived || 0));
   const kills = Math.max(0, Math.round(entry?.kills || 0));
   const totalSpawned = Math.max(0, Math.round(entry?.total_spawned || 0));
-  const killRate = totalSpawned > 0 ? Math.round((kills / totalSpawned) * 100) : 0;
-  const killLabel = totalSpawned > 0 ? `${kills}/${totalSpawned}` : String(kills);
+  // No tracking data (legacy entry) or bugged data (kills > spawned)
+  const noStats = totalSpawned <= 0 || kills > totalSpawned;
+  const killRate = noStats ? 0 : Math.round((kills / totalSpawned) * 100);
+  const killLabel = noStats ? 'N/A' : `${kills}/${totalSpawned}`;
 
   return {
     score,
@@ -55,11 +57,12 @@ export function getLeaderboardEntryStats(entry) {
     totalSpawned,
     killRate,
     killLabel,
+    noStats,
     stats: [
       { id: 'score', icon: '🏅', label: 'Рахунок', value: score, tone: SCORE_TONE },
       { id: 'waves', icon: '🌊', label: 'Хвилі', value: waves, tone: WAVE_TONE },
-      { id: 'kills', icon: '💀', label: 'Збито', value: killLabel, tone: KILLS_TONE },
-      { id: 'killRate', icon: '🎯', label: '% збиття', value: `${killRate}%`, tone: getAccuracyTone(killRate) },
+      { id: 'kills', icon: '💀', label: 'Збито', value: killLabel, tone: noStats ? '#475569' : KILLS_TONE },
+      { id: 'killRate', icon: '🎯', label: '% збиття', value: noStats ? 'N/A' : `${killRate}%`, tone: noStats ? '#475569' : getAccuracyTone(killRate) },
     ],
   };
 }
